@@ -26,6 +26,7 @@ public class StudentFrontendTrial {
         private final JPanel root = new JPanel(cards);
 
         private final LoginPanel loginPanel;
+        private final RegistrationPanel registrationPanel;
         private final StudentShellPanel studentShellPanel;
 
         MainFrame() {
@@ -35,9 +36,11 @@ public class StudentFrontendTrial {
             setLocationRelativeTo(null);
 
             loginPanel = new LoginPanel(this);
+            registrationPanel = new RegistrationPanel(this);
             studentShellPanel = new StudentShellPanel(this);
 
             root.add(loginPanel, "LOGIN");
+            root.add(registrationPanel, "REGISTER");
             root.add(studentShellPanel, "SHELL");
 
             setContentPane(root);
@@ -55,12 +58,17 @@ public class StudentFrontendTrial {
             studentShellPanel.refreshForStudent(student);
             cards.show(root, "SHELL");
         }
+
+        void showRegister() {
+            registrationPanel.reset();
+            cards.show(root, "REGISTER");
+        }
     }
 
     // ==================== LOGIN PANEL ====================
     static class LoginPanel extends JPanel {
         private final MainFrame frame;
-        private final JTextField txtEmail = new JTextField();
+        private final JTextField txtEmail = new JTextField(); // reused for username/first+last
         private final JPasswordField txtPass = new JPasswordField();
         private final JLabel lblError = new JLabel(" ");
 
@@ -89,7 +97,7 @@ public class StudentFrontendTrial {
             card.add(sub);
             card.add(Box.createVerticalStrut(18));
 
-            card.add(label("Email / Username"));
+            card.add(label("Username or Email"));
             styleField(txtEmail);
             card.add(txtEmail);
             card.add(Box.createVerticalStrut(10));
@@ -120,6 +128,15 @@ public class StudentFrontendTrial {
             card.add(Box.createVerticalStrut(10));
             card.add(actions);
 
+            // register button below login
+            card.add(Box.createVerticalStrut(8));
+            JButton btnRegister = new JButton("Register");
+            btnRegister.setFocusPainted(false);
+            btnRegister.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+            btnRegister.setAlignmentX(Component.LEFT_ALIGNMENT);
+            btnRegister.addActionListener(e -> frame.showRegister());
+            card.add(btnRegister);
+
             add(card);
         }
 
@@ -140,11 +157,203 @@ public class StudentFrontendTrial {
 
             Student s = MockAuthService.loginStudent(email, pass);
             if (s == null) {
-                lblError.setText("Invalid credentials. Try: tony@uom.mu / 1234");
+                lblError.setText("Invalid credentials. Try: tony@uom.mu or Tony Student / 1234");
             } else {
                 lblError.setText(" ");
                 frame.showStudentShell(s);
             }
+        }
+
+        private JLabel label(String text) {
+            JLabel l = new JLabel(text);
+            l.setFont(new Font("SansSerif", Font.PLAIN, 12));
+            l.setForeground(new Color(60, 60, 60));
+            l.setAlignmentX(Component.LEFT_ALIGNMENT);
+            return l;
+        }
+
+        private void styleField(JComponent c) {
+            c.setMaximumSize(new Dimension(Integer.MAX_VALUE, 32));
+            c.setFont(new Font("SansSerif", Font.PLAIN, 13));
+            c.setBorder(BorderFactory.createCompoundBorder(
+                    BorderFactory.createLineBorder(new Color(220, 225, 232)),
+                    new EmptyBorder(6, 8, 6, 8)
+            ));
+        }
+    }
+
+    // ==================== REGISTRATION PANEL ====================
+    static class RegistrationPanel extends JPanel {
+        private final MainFrame frame;
+        private final JTextField txtFirst = new JTextField();
+        private final JTextField txtLast = new JTextField();
+        private final JTextField txtEmail = new JTextField();
+        private final JPasswordField txtPass = new JPasswordField();
+        private final JPasswordField txtConfirm = new JPasswordField();
+        private final JTextField txtFaculty = new JTextField();
+        private final JTextField txtCourse = new JTextField();
+        private final JTextField txtYear = new JTextField();
+        private final JLabel lblError = new JLabel(" ");
+
+        RegistrationPanel(MainFrame frame) {
+            this.frame = frame;
+            setLayout(new BorderLayout()); // use border layout for scrolling
+            setBackground(new Color(245, 247, 250));
+
+            JPanel card = new JPanel();
+            card.setLayout(new BoxLayout(card, BoxLayout.Y_AXIS));
+            card.setBorder(new EmptyBorder(22, 22, 22, 22));
+            card.setBackground(Color.WHITE);
+
+            JLabel title = new JLabel("Student Registration");
+            title.setFont(new Font("SansSerif", Font.BOLD, 20));
+            title.setAlignmentX(Component.LEFT_ALIGNMENT);
+
+            JLabel sub = new JLabel("Provide your details to create an account.");
+            sub.setFont(new Font("SansSerif", Font.PLAIN, 12));
+            sub.setForeground(new Color(90, 90, 90));
+            sub.setAlignmentX(Component.LEFT_ALIGNMENT);
+
+            card.add(title);
+            card.add(Box.createVerticalStrut(6));
+            card.add(sub);
+            card.add(Box.createVerticalStrut(18));
+
+            card.add(label("First Name"));
+            styleField(txtFirst);
+            card.add(txtFirst);
+            card.add(Box.createVerticalStrut(10));
+
+            card.add(label("Last Name"));
+            styleField(txtLast);
+            card.add(txtLast);
+            card.add(Box.createVerticalStrut(10));
+
+            card.add(label("Email"));
+            styleField(txtEmail);
+            card.add(txtEmail);
+            card.add(Box.createVerticalStrut(10));
+            card.add(label("Password"));
+            styleField(txtPass);
+            card.add(txtPass);
+            card.add(Box.createVerticalStrut(10));
+
+            card.add(label("Confirm Password"));
+            styleField(txtConfirm);
+            card.add(txtConfirm);
+            card.add(Box.createVerticalStrut(10));
+
+            card.add(label("Faculty"));
+            styleField(txtFaculty);
+            card.add(txtFaculty);
+            card.add(Box.createVerticalStrut(10));
+
+            card.add(label("Course"));
+            styleField(txtCourse);
+            card.add(txtCourse);
+            card.add(Box.createVerticalStrut(10));
+
+            card.add(label("Year of Study"));
+            styleField(txtYear);
+            card.add(txtYear);
+
+            lblError.setForeground(new Color(190, 40, 40));
+            lblError.setFont(new Font("SansSerif", Font.PLAIN, 12));
+            lblError.setAlignmentX(Component.LEFT_ALIGNMENT);
+
+            JButton btnRegister = new JButton("Register");
+            btnRegister.setFocusPainted(false);
+            btnRegister.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+            btnRegister.setAlignmentX(Component.LEFT_ALIGNMENT);
+            btnRegister.setPreferredSize(new Dimension(120, 36));
+            btnRegister.addActionListener(e -> doRegistration());
+
+            JButton btnBack = new JButton("Back to Login");
+            btnBack.setFocusPainted(false);
+            btnBack.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+            btnBack.setAlignmentX(Component.LEFT_ALIGNMENT);
+            btnBack.addActionListener(e -> frame.showLogin());
+
+            JPanel actions = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
+            actions.setBackground(Color.WHITE);
+            actions.add(btnRegister);
+            actions.add(Box.createHorizontalStrut(8));
+            actions.add(btnBack);
+            actions.setAlignmentX(Component.LEFT_ALIGNMENT);
+
+            card.add(Box.createVerticalStrut(12));
+            card.add(lblError);
+            card.add(Box.createVerticalStrut(10));
+            card.add(actions);
+
+
+            // wrap card in scroll pane so user can scroll if window is small
+            JScrollPane sc = new JScrollPane(card,
+                    JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED,
+                    JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
+            sc.setBorder(null);
+            add(sc, BorderLayout.CENTER);
+        }
+
+        void reset() {
+            txtFirst.setText("");
+            txtLast.setText("");
+            txtEmail.setText("");
+            txtPass.setText("");
+            txtConfirm.setText("");
+            txtFaculty.setText("");
+            txtCourse.setText("");
+            txtYear.setText("");
+            lblError.setText(" ");
+        }
+
+        private void doRegistration() {
+            String first = txtFirst.getText().trim();
+            String last = txtLast.getText().trim();
+            String email = txtEmail.getText().trim();
+            String pass = new String(txtPass.getPassword());
+            String conf = new String(txtConfirm.getPassword());
+            String faculty = txtFaculty.getText().trim();
+            String course = txtCourse.getText().trim();
+            String yearStr = txtYear.getText().trim();
+
+            if (first.isEmpty() || last.isEmpty() || email.isEmpty() || pass.isEmpty() || conf.isEmpty() ||
+                    faculty.isEmpty() || course.isEmpty() || yearStr.isEmpty()) {
+                lblError.setText("All fields are required.");
+                return;
+            }
+            if (!pass.equals(conf)) {
+                lblError.setText("Passwords do not match.");
+                return;
+            }
+            int year;
+            try {
+                year = Integer.parseInt(yearStr);
+            } catch (Exception ex) {
+                lblError.setText("Year must be a number.");
+                return;
+            }
+            // ensure unique username (full name) and email among existing students
+            String fullName = first + " " + last;
+            for (Student s : MockDB.students) {
+                if (s.fullName.equalsIgnoreCase(fullName)) {
+                    lblError.setText("A student with that name already exists.");
+                    return;
+                }
+                if (s.email.equalsIgnoreCase(email)) {
+                    lblError.setText("Email already in use.");
+                    return;
+                }
+            }
+
+            String newId = "S" + String.format("%03d", MockDB.students.size() + 1);
+            // reuse existing fields: email set to fullName, branch stores faculty, section stores year
+            Student newStudent = new Student(newId, fullName, email, pass,
+                    course, faculty, String.valueOf(year), 0.0);
+            MockDB.students.add(newStudent);
+            JOptionPane.showMessageDialog(this, "Registration successful. You can now login.",
+                    "Success", JOptionPane.INFORMATION_MESSAGE);
+            frame.showLogin();
         }
 
         private JLabel label(String text) {
@@ -659,15 +868,20 @@ public class StudentFrontendTrial {
 
     // ----- Mock Services -----
     static class MockAuthService {
-        static Student loginStudent(String email, String password) {
+        static Student loginStudent(String identifier, String password) {
             for (Student s : MockDB.students) {
-                if (s.email.equalsIgnoreCase(email) && s.password.equals(password)) return s;
+                // support old-style email login as well as new full-name username
+                if ((s.email.equalsIgnoreCase(identifier) || s.fullName.equalsIgnoreCase(identifier))
+                        && s.password.equals(password)) {
+                    return s;
+                }
             }
             return null;
         }
     }
 
     static class MockStudentService {
+        
         static void updateStudent(Student updated) {
             // frontend mock update in the list
             for (int i = 0; i < MockDB.students.size(); i++) {
