@@ -1,0 +1,10 @@
+create a new package placementportal.company.ui
+
+it will have 6 classes-
+1.CompanyDataStore.java
+2.CompanyPortalFrame.java
+3.CreateJobPanel.java
+4.DashboardPanel.java
+5.JobOffer.java
+6.MyJobsPanel.java
+tables are not dynamic yet
