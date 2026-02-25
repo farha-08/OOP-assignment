@@ -1,0 +1,945 @@
+import javax.swing.*;
+import javax.swing.border.EmptyBorder;
+import javax.swing.event.DocumentEvent;
+import javax.swing.event.DocumentListener;
+import javax.swing.plaf.basic.BasicButtonUI;
+import javax.swing.table.*;
+import java.awt.*;
+import java.awt.event.*;
+import java.time.*;
+import java.time.format.DateTimeFormatter;
+import java.util.List;
+import java.util.*;
+import java.util.stream.Collectors;
+
+public class StudentJobBrowserApp {
+
+    // Palette (your scheme)
+    private static final Color MAIN_BG = Color.decode("#CFCFCF");
+    private static final Color ACCENT  = Color.decode("#545454");
+    private static final Color BTN_BG  = Color.decode("#7D7D7D"); // buttons
+
+    // Subtle table shading (still matches your greyish scheme)
+    private static final Color ROW_ALT = new Color(0xE2E2E2);
+
+    // Header/nav bars use ACCENT to respect palette
+    private static final Color BAR_BG = ACCENT;
+
+    // Normal font for text areas (fixes "typewriter/console" look)
+    private static final Font TEXTAREA_FONT = new Font("SansSerif", Font.PLAIN, 12);
+
+    // -------------------- MOCK SESSION --------------------
+    private static final StudentProfile CURRENT_STUDENT = new StudentProfile(
+            "Alice Johnson",
+            7.5,
+            "BSc (Hons) Computer Science",
+            "Computer Science"
+    );
+
+    public static void main(String[] args) {
+        SwingUtilities.invokeLater(() -> {
+            try { UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName()); }
+            catch (Exception ignored) {}
+
+            MainFrame f = new MainFrame();
+            SwingUtilities.updateComponentTreeUI(f);
+            f.setVisible(true);
+        });
+    }
+
+    // ==================== MAIN FRAME (CardLayout) ====================
+    static class MainFrame extends JFrame {
+        private final CardLayout cards = new CardLayout();
+        private final JPanel root = new JPanel(cards);
+
+        private final StudentDashboardPanel dashboardPanel;
+        private final OffersBrowserPanel offersBrowserPanel;
+        private final OfferDetailsPanel offerDetailsPanel;
+
+        MainFrame() {
+            setTitle("Student Placement System - " + CURRENT_STUDENT.name);
+            setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+            setSize(1200, 700);
+            setLocationRelativeTo(null);
+
+            offerDetailsPanel = new OfferDetailsPanel(this);
+            offersBrowserPanel = new OffersBrowserPanel(this, offerDetailsPanel);
+            dashboardPanel = new StudentDashboardPanel(this);
+
+            root.setBackground(MAIN_BG);
+            root.add(dashboardPanel, "DASH");
+            root.add(offersBrowserPanel, "OFFERS");
+            root.add(offerDetailsPanel, "DETAILS");
+
+            setContentPane(root);
+
+            showDashboard(); // change to showOffers() if you want default page = offers
+        }
+
+        void showDashboard() { cards.show(root, "DASH"); }
+        void showOffers()    { cards.show(root, "OFFERS"); }
+        void showDetails()   { cards.show(root, "DETAILS"); }
+    }
+
+    // ==================== TOP BAR ====================
+    static class TopBar extends JPanel {
+        TopBar(MainFrame frame, String active) {
+            setLayout(new BorderLayout());
+            setBackground(BAR_BG);
+
+            JLabel title = new JLabel("  Student Placement System - " + CURRENT_STUDENT.name);
+            title.setForeground(Color.WHITE);
+            title.setFont(new Font("SansSerif", Font.BOLD, 14));
+
+            JPanel nav = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 8));
+            nav.setOpaque(false);
+
+            nav.add(navButton("Dashboard", frame::showDashboard, "Dashboard".equals(active)));
+            nav.add(navButton("Profile", () -> msg(frame, "Profile screen not in your scope."), "Profile".equals(active)));
+            nav.add(navButton("Offers", frame::showOffers, "Offers".equals(active)));
+            nav.add(navButton("Applications", () -> msg(frame, "Applications screen not in your scope."), "Applications".equals(active)));
+            nav.add(navButton("Policy", () -> msg(frame, "Policy screen not in your scope."), "Policy".equals(active)));
+
+            JButton logout = new JButton("Log Out");
+            styleButton(logout, 110);
+            logout.addActionListener(e -> msg(frame, "Logout (demo)."));
+
+            JPanel right = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 8));
+            right.setOpaque(false);
+            right.add(logout);
+
+            add(title, BorderLayout.WEST);
+            add(nav, BorderLayout.CENTER);
+            add(right, BorderLayout.EAST);
+        }
+
+        private JButton navButton(String text, Runnable onClick, boolean isActive) {
+            JButton b = new JButton(text);
+            b.setFocusPainted(false);
+            b.setFont(new Font("SansSerif", Font.PLAIN, 12));
+            b.setBorder(BorderFactory.createLineBorder(ACCENT));
+            b.addActionListener(e -> onClick.run());
+
+            b.setOpaque(true);
+            b.setContentAreaFilled(true);
+            b.setBorderPainted(true);
+
+            if (isActive) {
+                b.setBackground(BTN_BG);
+                b.setForeground(Color.WHITE); // keep active tab white
+            } else {
+                b.setBackground(MAIN_BG);
+                b.setForeground(Color.BLACK);
+            }
+
+            // force painting
+            b.setUI(new SolidButtonUI());
+            if (isActive) b.setForeground(Color.WHITE); // ensure stays white after UI
+
+            return b;
+        }
+    }
+
+    // ==================== DASHBOARD ====================
+    static class StudentDashboardPanel extends JPanel {
+        StudentDashboardPanel(MainFrame frame) {
+            setLayout(new BorderLayout());
+            setBackground(MAIN_BG);
+
+            add(new TopBar(frame, "Dashboard"), BorderLayout.NORTH);
+
+            JPanel body = new JPanel(new BorderLayout());
+            body.setBackground(MAIN_BG);
+            body.setBorder(new EmptyBorder(10, 10, 10, 10));
+
+            body.add(new QuickLinksSidebar(frame), BorderLayout.WEST);
+
+            JPanel center = new JPanel(new BorderLayout());
+            center.setBackground(MAIN_BG);
+            center.setBorder(BorderFactory.createLineBorder(ACCENT));
+
+            JLabel msg = new JLabel("<html><div style='padding:10px;'>" +
+                    "<b>Dashboard (Demo)</b><br/>" +
+                    "Click <b>Browse Offers</b> to open the Offers screen.</div></html>");
+            center.add(msg, BorderLayout.NORTH);
+
+            body.add(center, BorderLayout.CENTER);
+            add(body, BorderLayout.CENTER);
+        }
+    }
+
+    // ==================== SIDEBAR ====================
+    static class QuickLinksSidebar extends JPanel {
+        QuickLinksSidebar(MainFrame frame) {
+            setPreferredSize(new Dimension(260, 0));
+            setLayout(new BorderLayout(0, 8));
+            setBackground(MAIN_BG);
+
+            JPanel header = new JPanel(new BorderLayout());
+            header.setBackground(BAR_BG);
+            JLabel h = new JLabel("  Quick Links");
+            h.setForeground(Color.WHITE);
+            h.setFont(new Font("SansSerif", Font.BOLD, 14));
+            header.add(h, BorderLayout.CENTER);
+
+            JPanel buttons = new JPanel(new GridLayout(0, 1, 8, 8));
+            buttons.setBackground(MAIN_BG);
+            buttons.setBorder(new EmptyBorder(10, 10, 10, 10));
+
+            JButton browse = new JButton("Browse Offers");
+            styleButton(browse, 0);
+            browse.addActionListener(e -> frame.showOffers());
+
+            JButton apps = new JButton("My Applications");
+            styleButton(apps, 0);
+            apps.addActionListener(e -> msg(frame, "My Applications not in your scope."));
+
+            JButton edit = new JButton("Edit Profile");
+            styleButton(edit, 0);
+            edit.addActionListener(e -> msg(frame, "Edit Profile not in your scope."));
+
+            buttons.add(browse);
+            buttons.add(apps);
+            buttons.add(edit);
+
+            add(header, BorderLayout.NORTH);
+            add(buttons, BorderLayout.CENTER);
+        }
+    }
+
+    // ==================== OFFERS BROWSER ====================
+    static class OffersBrowserPanel extends JPanel {
+        private final MainFrame frame;
+        private final OfferDetailsPanel detailsPanel;
+
+        private final JTextField txtSearch = new JTextField();
+        private final JComboBox<String> cbType = new JComboBox<>();
+        private final JComboBox<String> cbLocation = new JComboBox<>();
+        private final JComboBox<String> cbExperience = new JComboBox<>();
+        private final JComboBox<String> cbCompany = new JComboBox<>();
+        private final JComboBox<String> cbTime = new JComboBox<>();
+
+        private final JLabel lblStatus = new JLabel(" ");
+
+        private final DefaultTableModel model;
+        private final JTable table;
+        private final TableRowSorter<DefaultTableModel> sorter;
+
+        private final List<Offer> allOffers = MockData.offers();
+
+        OffersBrowserPanel(MainFrame frame, OfferDetailsPanel detailsPanel) {
+            this.frame = frame;
+            this.detailsPanel = detailsPanel;
+
+            setLayout(new BorderLayout());
+            setBackground(MAIN_BG);
+
+            add(new TopBar(frame, "Offers"), BorderLayout.NORTH);
+
+            JPanel body = new JPanel(new BorderLayout(10, 10));
+            body.setBackground(MAIN_BG);
+            body.setBorder(new EmptyBorder(10, 10, 10, 10));
+
+            body.add(new QuickLinksSidebar(frame), BorderLayout.WEST);
+
+            JPanel center = new JPanel(new BorderLayout());
+            center.setBackground(MAIN_BG);
+            center.setBorder(BorderFactory.createLineBorder(ACCENT));
+
+            JPanel sectionHeader = new JPanel(new BorderLayout());
+            sectionHeader.setBackground(BAR_BG);
+            JLabel sec = new JLabel("  Recruitment Offers");
+            sec.setForeground(Color.WHITE);
+            sec.setFont(new Font("SansSerif", Font.BOLD, 13));
+            sectionHeader.add(sec, BorderLayout.CENTER);
+
+            center.add(sectionHeader, BorderLayout.NORTH);
+            center.add(buildFiltersPanel(), BorderLayout.NORTH);
+
+            String[] cols = {"Company", "Title", "Type", "Salary", "Location", "Deadline", "Eligible"};
+            model = new DefaultTableModel(cols, 0) {
+                @Override public boolean isCellEditable(int row, int col) { return false; }
+            };
+
+            table = new JTable(model);
+            styleTable(table);
+
+            sorter = new TableRowSorter<>(model);
+            table.setRowSorter(sorter);
+
+            table.getColumnModel().getColumn(6).setCellRenderer(new EligibleRenderer());
+
+            AlternateRowRenderer alt = new AlternateRowRenderer();
+            for (int i = 0; i < table.getColumnCount(); i++) {
+                if (i != 6) table.getColumnModel().getColumn(i).setCellRenderer(alt);
+            }
+
+            reloadRows(allOffers);
+
+            table.addMouseListener(new MouseAdapter() {
+                @Override public void mouseClicked(MouseEvent e) {
+                    if (e.getClickCount() == 2 && table.getSelectedRow() != -1) {
+                        openSelectedOffer();
+                    }
+                }
+            });
+
+            JScrollPane sp = new JScrollPane(table);
+            sp.setBorder(BorderFactory.createMatteBorder(1, 0, 1, 0, ACCENT));
+            center.add(sp, BorderLayout.CENTER);
+
+            JPanel bottom = new JPanel(new BorderLayout());
+            bottom.setBackground(MAIN_BG);
+            lblStatus.setBorder(new EmptyBorder(6, 10, 6, 10));
+            bottom.add(lblStatus, BorderLayout.WEST);
+
+            JButton reset = new JButton("Reset Filters");
+            styleButton(reset, 140);
+            reset.addActionListener(e -> resetFilters());
+
+            JButton viewDetails = new JButton("View Details");
+            styleButton(viewDetails, 140);
+            viewDetails.addActionListener(e -> openSelectedOffer());
+
+            JPanel bottomRight = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 6));
+            bottomRight.setBackground(MAIN_BG);
+            bottomRight.add(reset);
+            bottomRight.add(viewDetails);
+
+            bottom.add(bottomRight, BorderLayout.EAST);
+            center.add(bottom, BorderLayout.SOUTH);
+
+            body.add(center, BorderLayout.CENTER);
+            add(body, BorderLayout.CENTER);
+
+            updateStatus();
+            applyFilters();
+        }
+
+        private JPanel buildFiltersPanel() {
+            JPanel p = new JPanel(new BorderLayout());
+            p.setBackground(MAIN_BG);
+            p.setBorder(new EmptyBorder(10, 10, 10, 10));
+
+            JPanel row = new JPanel(new GridBagLayout());
+            row.setBackground(MAIN_BG);
+
+            GridBagConstraints gc = new GridBagConstraints();
+            gc.insets = new Insets(0, 0, 8, 12);
+            gc.anchor = GridBagConstraints.WEST;
+            gc.fill = GridBagConstraints.HORIZONTAL;
+
+            gc.gridx = 0; gc.gridy = 0; gc.weightx = 0;
+            row.add(label("Search:"), gc);
+
+            gc.gridx = 1; gc.gridy = 0; gc.weightx = 1;
+            txtSearch.setToolTipText("Company or job title...");
+            row.add(txtSearch, gc);
+
+            gc.gridx = 2; gc.gridy = 0; gc.weightx = 0;
+            row.add(label("Type:"), gc);
+
+            gc.gridx = 3; gc.gridy = 0; gc.weightx = 0.4;
+            row.add(cbType, gc);
+
+            gc.gridx = 0; gc.gridy = 1; gc.weightx = 0;
+            row.add(label("Location:"), gc);
+
+            gc.gridx = 1; gc.gridy = 1; gc.weightx = 1;
+            row.add(cbLocation, gc);
+
+            gc.gridx = 2; gc.gridy = 1; gc.weightx = 0;
+            row.add(label("Experience:"), gc);
+
+            gc.gridx = 3; gc.gridy = 1; gc.weightx = 0.4;
+            row.add(cbExperience, gc);
+
+            gc.gridx = 0; gc.gridy = 2; gc.weightx = 0;
+            row.add(label("Company:"), gc);
+
+            gc.gridx = 1; gc.gridy = 2; gc.weightx = 1;
+            row.add(cbCompany, gc);
+
+            gc.gridx = 2; gc.gridy = 2; gc.weightx = 0;
+            row.add(label("Time:"), gc);
+
+            gc.gridx = 3; gc.gridy = 2; gc.weightx = 0.4;
+            row.add(cbTime, gc);
+
+            fillFiltersFromData();
+
+            txtSearch.getDocument().addDocumentListener(new DocumentListener() {
+                public void insertUpdate(DocumentEvent e) { applyFilters(); }
+                public void removeUpdate(DocumentEvent e) { applyFilters(); }
+                public void changedUpdate(DocumentEvent e) { applyFilters(); }
+            });
+
+            ActionListener filterListener = e -> applyFilters();
+            cbType.addActionListener(filterListener);
+            cbLocation.addActionListener(filterListener);
+            cbExperience.addActionListener(filterListener);
+            cbCompany.addActionListener(filterListener);
+            cbTime.addActionListener(filterListener);
+
+            p.add(row, BorderLayout.CENTER);
+
+            JPanel sep = new JPanel();
+            sep.setPreferredSize(new Dimension(1, 1));
+            sep.setBackground(ACCENT);
+            p.add(sep, BorderLayout.SOUTH);
+
+            return p;
+        }
+
+        private JLabel label(String text) {
+            JLabel l = new JLabel(text);
+            l.setForeground(Color.BLACK);
+            l.setFont(new Font("SansSerif", Font.PLAIN, 12));
+            return l;
+        }
+
+        private void fillFiltersFromData() {
+            Set<String> types = allOffers.stream().map(o -> o.type).collect(Collectors.toCollection(TreeSet::new));
+            cbType.removeAllItems();
+            cbType.addItem("All Types");
+            for (String t : types) cbType.addItem(t);
+
+            Set<String> locs = allOffers.stream().map(o -> o.location).collect(Collectors.toCollection(TreeSet::new));
+            cbLocation.removeAllItems();
+            cbLocation.addItem("All Locations");
+            for (String loc : locs) cbLocation.addItem(loc);
+
+            cbExperience.removeAllItems();
+            cbExperience.addItem("Any");
+            cbExperience.addItem("Entry");
+            cbExperience.addItem("Junior");
+            cbExperience.addItem("Mid");
+            cbExperience.addItem("Senior");
+
+            Set<String> companies = allOffers.stream().map(o -> o.company).collect(Collectors.toCollection(TreeSet::new));
+            cbCompany.removeAllItems();
+            cbCompany.addItem("All Companies");
+            for (String c : companies) cbCompany.addItem(c);
+
+            cbTime.removeAllItems();
+            cbTime.addItem("Any time");
+            cbTime.addItem("Past month");
+            cbTime.addItem("Past week");
+            cbTime.addItem("Past 24 hours");
+        }
+
+        private void resetFilters() {
+            txtSearch.setText("");
+            cbType.setSelectedIndex(0);
+            cbLocation.setSelectedIndex(0);
+            cbExperience.setSelectedIndex(0);
+            cbCompany.setSelectedIndex(0);
+            cbTime.setSelectedIndex(0);
+            applyFilters();
+        }
+
+        private void reloadRows(List<Offer> offers) {
+            model.setRowCount(0);
+            DateTimeFormatter df = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+            for (Offer o : offers) {
+                boolean eligible = o.isEligibleFor(CURRENT_STUDENT);
+                model.addRow(new Object[]{
+                        o.company,
+                        o.title,
+                        o.type,
+                        o.salaryText,
+                        o.location,
+                        df.format(o.deadline),
+                        eligible ? "Yes" : "No"
+                });
+            }
+        }
+
+        private void applyFilters() {
+            RowFilter<DefaultTableModel, Integer> rf = new RowFilter<>() {
+                @Override
+                public boolean include(Entry<? extends DefaultTableModel, ? extends Integer> entry) {
+                    int modelRow = entry.getIdentifier();
+                    Offer o = allOffers.get(modelRow);
+
+                    String q = txtSearch.getText().trim().toLowerCase(Locale.ROOT);
+                    if (!q.isEmpty()) {
+                        String hay = (o.company + " " + o.title).toLowerCase(Locale.ROOT);
+                        if (!hay.contains(q)) return false;
+                    }
+
+                    String typePick = (String) cbType.getSelectedItem();
+                    if (typePick != null && !typePick.equals("All Types")) {
+                        if (!o.type.equals(typePick)) return false;
+                    }
+
+                    String locPick = (String) cbLocation.getSelectedItem();
+                    if (locPick != null && !locPick.equals("All Locations")) {
+                        if (!o.location.equals(locPick)) return false;
+                    }
+
+                    String expPick = (String) cbExperience.getSelectedItem();
+                    if (expPick != null && !expPick.equals("Any")) {
+                        if (!o.experienceLevel.equals(expPick)) return false;
+                    }
+
+                    String compPick = (String) cbCompany.getSelectedItem();
+                    if (compPick != null && !compPick.equals("All Companies")) {
+                        if (!o.company.equals(compPick)) return false;
+                    }
+
+                    String timePick = (String) cbTime.getSelectedItem();
+                    if (timePick != null && !timePick.equals("Any time")) {
+                        LocalDateTime now = LocalDateTime.now();
+                        LocalDateTime cutoff;
+                        switch (timePick) {
+                            case "Past month" -> cutoff = now.minusDays(30);
+                            case "Past week" -> cutoff = now.minusDays(7);
+                            case "Past 24 hours" -> cutoff = now.minusHours(24);
+                            default -> cutoff = null;
+                        }
+                        if (cutoff != null && o.postedAt.isBefore(cutoff)) return false;
+                    }
+
+                    return true;
+                }
+            };
+
+            sorter.setRowFilter(rf);
+            updateStatus();
+        }
+
+        private void updateStatus() {
+            int shown = table.getRowCount();
+            lblStatus.setText(shown + " offer(s) found. Click a row to view details.");
+        }
+
+        private void openSelectedOffer() {
+            int viewRow = table.getSelectedRow();
+            if (viewRow == -1) {
+                msg(frame, "Please select an offer first.");
+                return;
+            }
+            int modelRow = table.convertRowIndexToModel(viewRow);
+            Offer selected = allOffers.get(modelRow);
+
+            detailsPanel.loadOffer(selected);
+            frame.showDetails();
+        }
+    }
+
+    // ==================== DETAILS SCREEN ====================
+    static class OfferDetailsPanel extends JPanel {
+        private final MainFrame frame;
+
+        private final JLabel lblOfferTitle = new JLabel("Offer: -");
+
+        private final JLabel vCompany = new JLabel("-");
+        private final JLabel vTitle = new JLabel("-");
+        private final JLabel vType = new JLabel("-");
+        private final JLabel vSalary = new JLabel("-");
+        private final JLabel vLocation = new JLabel("-");
+        private final JLabel vDeadline = new JLabel("-");
+        private final JLabel vPosted = new JLabel("-");
+
+        private final JTextArea taDesc = new JTextArea(4, 20);
+
+        private final JLabel vCgpa = new JLabel("-");
+        private final JLabel vCourses = new JLabel("-");
+        private final JLabel vBranches = new JLabel("-");
+
+        private final JLabel vEligStatus = new JLabel("-");
+        private final JTextArea taEligReasons = new JTextArea(2, 20);
+
+        private Offer loadedOffer;
+
+        OfferDetailsPanel(MainFrame frame) {
+            this.frame = frame;
+
+            setLayout(new BorderLayout());
+            setBackground(MAIN_BG);
+
+            add(new TopBar(frame, "Offers"), BorderLayout.NORTH);
+
+            JPanel body = new JPanel(new BorderLayout());
+            body.setBackground(MAIN_BG);
+            body.setBorder(new EmptyBorder(10, 10, 10, 10));
+
+            JPanel center = new JPanel();
+            center.setLayout(new BoxLayout(center, BoxLayout.Y_AXIS));
+            center.setBackground(MAIN_BG);
+            center.setBorder(BorderFactory.createLineBorder(ACCENT));
+
+            JPanel header = new JPanel(new BorderLayout());
+            header.setBackground(BAR_BG);
+            lblOfferTitle.setForeground(Color.WHITE);
+            lblOfferTitle.setFont(new Font("SansSerif", Font.BOLD, 13));
+            lblOfferTitle.setBorder(new EmptyBorder(6, 10, 6, 10));
+            header.add(lblOfferTitle, BorderLayout.CENTER);
+            center.add(header);
+
+            center.add(section("Job Details", jobDetailsPanel()));
+            center.add(section("Description", descriptionPanel()));
+            center.add(section("Eligibility Criteria", criteriaPanel()));
+            center.add(section("Your Eligibility", yourEligibilityPanel()));
+
+            JPanel bottom = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 8));
+            bottom.setBackground(MAIN_BG);
+
+            JButton back = new JButton("Go Back");
+            styleButton(back, 120);
+            back.addActionListener(e -> frame.showOffers());
+
+            JButton apply = new JButton("Apply");
+            styleButton(apply, 120);
+            apply.addActionListener(e -> {
+                if (loadedOffer == null) return;
+                if (!loadedOffer.isEligibleFor(CURRENT_STUDENT)) {
+                    msg(frame, "Not eligible. Cannot apply.");
+                } else {
+                    msg(frame, "Application submitted (demo).");
+                }
+            });
+
+            bottom.add(back);
+            bottom.add(apply);
+            center.add(bottom);
+
+            body.add(center, BorderLayout.CENTER);
+            add(body, BorderLayout.CENTER);
+        }
+
+        void loadOffer(Offer offer) {
+            this.loadedOffer = offer;
+
+            DateTimeFormatter d  = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+            DateTimeFormatter dt = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
+
+            lblOfferTitle.setText("Offer: " + offer.title);
+
+            vCompany.setText(offer.company);
+            vTitle.setText(offer.title);
+            vType.setText(offer.type);
+            vSalary.setText(offer.salaryText);
+            vLocation.setText(offer.location);
+            vDeadline.setText(d.format(offer.deadline));
+            vPosted.setText(dt.format(offer.postedAt));
+
+            taDesc.setText(offer.description);
+
+            vCgpa.setText(String.valueOf(offer.minCgpa));
+            vCourses.setText(String.join(", ", offer.acceptedCourses));
+            vBranches.setText(String.join(", ", offer.acceptedBranches));
+
+            EligibilityCheck check = offer.checkEligibility(CURRENT_STUDENT);
+            vEligStatus.setText("Status: " + (check.eligible ? "Eligible" : "Not Eligible"));
+            vEligStatus.setForeground(check.eligible ? new Color(0x0A6E2A) : Color.RED);
+
+            taEligReasons.setText(check.eligible ? "You meet the criteria." : String.join("\n", check.reasons));
+        }
+
+        private JPanel section(String title, JComponent content) {
+            JPanel wrap = new JPanel(new BorderLayout());
+            wrap.setBackground(MAIN_BG);
+            wrap.setBorder(new EmptyBorder(10, 10, 10, 10));
+
+            JPanel titled = new JPanel(new BorderLayout());
+            titled.setBackground(MAIN_BG);
+            titled.setBorder(BorderFactory.createTitledBorder(BorderFactory.createLineBorder(ACCENT), title));
+            titled.add(content, BorderLayout.CENTER);
+
+            wrap.add(titled, BorderLayout.CENTER);
+            return wrap;
+        }
+
+        private JPanel jobDetailsPanel() {
+            JPanel p = new JPanel(new GridLayout(0, 2, 10, 6));
+            p.setBackground(MAIN_BG);
+            p.add(bold("Company:"));  p.add(vCompany);
+            p.add(bold("Title:"));    p.add(vTitle);
+            p.add(bold("Type:"));     p.add(vType);
+            p.add(bold("Salary:"));   p.add(vSalary);
+            p.add(bold("Location:")); p.add(vLocation);
+            p.add(bold("Deadline:")); p.add(vDeadline);
+            p.add(bold("Posted:"));   p.add(vPosted);
+            return p;
+        }
+
+        private JPanel descriptionPanel() {
+            JPanel p = new JPanel(new BorderLayout());
+            p.setBackground(MAIN_BG);
+
+            taDesc.setLineWrap(true);
+            taDesc.setWrapStyleWord(true);
+            taDesc.setEditable(false);
+            taDesc.setBackground(Color.WHITE);
+
+            // ✅ fix "weird font" + add padding
+            taDesc.setFont(TEXTAREA_FONT);
+            taDesc.setMargin(new Insets(6, 6, 6, 6));
+
+            p.add(new JScrollPane(taDesc), BorderLayout.CENTER);
+            return p;
+        }
+
+        private JPanel criteriaPanel() {
+            JPanel p = new JPanel(new GridLayout(0, 2, 10, 6));
+            p.setBackground(MAIN_BG);
+            p.add(bold("Minimum CGPA:")); p.add(vCgpa);
+            p.add(bold("Courses:"));      p.add(vCourses);
+            p.add(bold("Branches:"));     p.add(vBranches);
+            return p;
+        }
+
+        private JPanel yourEligibilityPanel() {
+            JPanel p = new JPanel(new BorderLayout(10, 8));
+            p.setBackground(MAIN_BG);
+
+            JPanel top = new JPanel(new BorderLayout());
+            top.setBackground(MAIN_BG);
+            top.add(vEligStatus, BorderLayout.WEST);
+
+            taEligReasons.setEditable(false);
+            taEligReasons.setLineWrap(true);
+            taEligReasons.setWrapStyleWord(true);
+            taEligReasons.setBackground(Color.WHITE);
+
+            // ✅ fix "weird font" + add padding
+            taEligReasons.setFont(TEXTAREA_FONT);
+            taEligReasons.setMargin(new Insets(6, 6, 6, 6));
+
+            p.add(top, BorderLayout.NORTH);
+            p.add(new JScrollPane(taEligReasons), BorderLayout.CENTER);
+            return p;
+        }
+
+        private JLabel bold(String s) {
+            JLabel l = new JLabel(s);
+            l.setFont(new Font("SansSerif", Font.BOLD, 12));
+            return l;
+        }
+    }
+
+    // ==================== BUTTON UI FIX (forces #7D7D7D) ====================
+    static class SolidButtonUI extends BasicButtonUI {
+        @Override
+        public void paint(Graphics g, JComponent c) {
+            AbstractButton b = (AbstractButton) c;
+            Graphics2D g2 = (Graphics2D) g.create();
+            g2.setColor(b.getBackground());
+            g2.fillRect(0, 0, b.getWidth(), b.getHeight());
+            g2.dispose();
+            super.paint(g, c);
+        }
+    }
+
+    // ✅ updated: black text for buttons
+    private static void styleButton(JButton b, int fixedWidth) {
+        b.setBackground(BTN_BG);
+        b.setForeground(Color.BLACK); // ✅ black font on grey buttons
+        b.setFont(new Font("SansSerif", Font.BOLD, 12));
+        b.setFocusPainted(false);
+
+        b.setOpaque(true);
+        b.setContentAreaFilled(true);
+        b.setBorderPainted(true);
+        b.setBorder(BorderFactory.createLineBorder(ACCENT));
+
+        b.setUI(new SolidButtonUI());
+
+        if (fixedWidth > 0) b.setPreferredSize(new Dimension(fixedWidth, 32));
+        else b.setPreferredSize(new Dimension(160, 32));
+    }
+
+    private static void msg(Component parent, String text) {
+        JOptionPane.showMessageDialog(parent, text);
+    }
+
+    // ==================== TABLE STYLE + RENDERERS ====================
+    private static void styleTable(JTable table) {
+        table.setRowHeight(24);
+        table.setFillsViewportHeight(true);
+        table.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+        table.setGridColor(ACCENT);
+        table.setShowHorizontalLines(true);
+        table.setShowVerticalLines(false);
+
+        JTableHeader hdr = table.getTableHeader();
+        hdr.setBackground(MAIN_BG);
+        hdr.setForeground(Color.BLACK);
+        hdr.setBorder(BorderFactory.createLineBorder(ACCENT));
+        hdr.setFont(new Font("SansSerif", Font.BOLD, 12));
+    }
+
+    static class AlternateRowRenderer extends DefaultTableCellRenderer {
+        @Override
+        public Component getTableCellRendererComponent(JTable table, Object value,
+                                                      boolean isSelected, boolean hasFocus,
+                                                      int row, int column) {
+            super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
+
+            if (isSelected) {
+                setBackground(ACCENT);
+                setForeground(Color.WHITE);
+            } else {
+                setBackground((row % 2 == 0) ? Color.WHITE : ROW_ALT);
+                setForeground(Color.BLACK);
+            }
+            return this;
+        }
+    }
+
+    static class EligibleRenderer extends DefaultTableCellRenderer {
+        @Override
+        public Component getTableCellRendererComponent(JTable table, Object value,
+                                                      boolean isSelected, boolean hasFocus,
+                                                      int row, int column) {
+            super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
+
+            String s = String.valueOf(value);
+            setFont(getFont().deriveFont(Font.BOLD));
+
+            if (isSelected) {
+                setBackground(ACCENT);
+                setForeground(Color.WHITE);
+                return this;
+            }
+
+            setBackground((row % 2 == 0) ? Color.WHITE : ROW_ALT);
+            if ("Yes".equalsIgnoreCase(s)) setForeground(new Color(0x0A6E2A));
+            else if ("No".equalsIgnoreCase(s)) setForeground(Color.RED);
+            else setForeground(Color.BLACK);
+
+            return this;
+        }
+    }
+
+    // ==================== DATA MODELS ====================
+    static class StudentProfile {
+        final String name;
+        final double cgpa;
+        final String course;
+        final String branch;
+
+        StudentProfile(String name, double cgpa, String course, String branch) {
+            this.name = name;
+            this.cgpa = cgpa;
+            this.course = course;
+            this.branch = branch;
+        }
+    }
+
+    static class Offer {
+        final String company, title, type, salaryText, location;
+        final LocalDate deadline;
+        final LocalDateTime postedAt;
+        final String experienceLevel;
+        final String description;
+        final double minCgpa;
+        final List<String> acceptedCourses;
+        final List<String> acceptedBranches;
+
+        Offer(String company, String title, String type, String salaryText, String location,
+              LocalDate deadline, LocalDateTime postedAt, String experienceLevel,
+              String description, double minCgpa, List<String> courses, List<String> branches) {
+            this.company = company;
+            this.title = title;
+            this.type = type;
+            this.salaryText = salaryText;
+            this.location = location;
+            this.deadline = deadline;
+            this.postedAt = postedAt;
+            this.experienceLevel = experienceLevel;
+            this.description = description;
+            this.minCgpa = minCgpa;
+            this.acceptedCourses = courses;
+            this.acceptedBranches = branches;
+        }
+
+        boolean isEligibleFor(StudentProfile s) { return checkEligibility(s).eligible; }
+
+        EligibilityCheck checkEligibility(StudentProfile s) {
+            List<String> reasons = new ArrayList<>();
+            if (s.cgpa < minCgpa) reasons.add("- Your CGPA (" + s.cgpa + ") is below minimum (" + minCgpa + ")");
+            if (!acceptedCourses.isEmpty() && !acceptedCourses.contains(s.course))
+                reasons.add("- Your course (" + s.course + ") is not accepted");
+            if (!acceptedBranches.isEmpty() && !acceptedBranches.contains(s.branch))
+                reasons.add("- Your branch (" + s.branch + ") is not accepted");
+            return new EligibilityCheck(reasons.isEmpty(), reasons);
+        }
+    }
+
+    static class EligibilityCheck {
+        final boolean eligible;
+        final List<String> reasons;
+
+        EligibilityCheck(boolean eligible, List<String> reasons) {
+            this.eligible = eligible;
+            this.reasons = reasons;
+        }
+    }
+
+    // ==================== MAURITIUS MOCK DATA ====================
+    static class MockData {
+        static List<Offer> offers() {
+            LocalDateTime now = LocalDateTime.now();
+
+            return List.of(
+                    new Offer("MCB Ltd", "Software Engineer", "Full-Time", "Rs 55,000 / month", "Ebène",
+                            LocalDate.now().plusDays(25), now.minusDays(2), "Junior",
+                            "Develop and maintain backend services, APIs, and database integrations for banking systems.",
+                            7.0, List.of("BSc (Hons) Computer Science", "BSc (Hons) Information Systems"), List.of("Computer Science")),
+
+                    new Offer("SBM Bank (Mauritius)", "Data Analyst", "Full-Time", "Rs 50,000 / month", "Port Louis",
+                            LocalDate.now().plusDays(30), now.minusDays(10), "Junior",
+                            "Analyze datasets, create reports and dashboards, and support business decision-making.",
+                            7.0, List.of("BSc (Hons) Computer Science", "BSc (Hons) Data Science"), List.of("Computer Science", "Data Science")),
+
+                    new Offer("Mauritius Telecom", "Network Support Intern", "Internship", "Rs 18,000 / month", "Port Louis",
+                            LocalDate.now().plusDays(14), now.minusHours(18), "Entry",
+                            "Assist in network monitoring, troubleshooting, and documentation for telecom infrastructure.",
+                            6.5, List.of("BSc (Hons) Computer Science", "BSc (Hons) Networking"), List.of("Computer Science", "Networking")),
+
+                    new Offer("Emtel", "QA Intern", "Internship", "Rs 16,000 / month", "Ebène",
+                            LocalDate.now().plusDays(20), now.minusDays(6), "Entry",
+                            "Support QA team with test cases, regression testing, and bug reporting for mobile apps.",
+                            6.0, List.of("BSc (Hons) Computer Science"), List.of("Computer Science")),
+
+                    new Offer("Ceridian Mauritius", "Junior Java Developer", "Full-Time", "Rs 48,000 / month", "Moka",
+                            LocalDate.now().plusDays(18), now.minusDays(4), "Junior",
+                            "Work on enterprise applications using Java, SQL, and REST APIs. Collaborate with agile teams.",
+                            7.0, List.of("BSc (Hons) Computer Science"), List.of("Computer Science")),
+
+                    new Offer("Accenture Mauritius", "Business Intelligence Intern", "Internship", "Rs 20,000 / month", "Quatre Bornes",
+                            LocalDate.now().plusDays(28), now.minusDays(1), "Entry",
+                            "Support BI pipelines, clean data, and build basic reports using BI tools.",
+                            6.5, List.of("BSc (Hons) Computer Science", "BSc (Hons) Information Systems"), List.of("Computer Science", "Information Systems")),
+
+                    new Offer("Infosys Mauritius", "Frontend Developer", "Full-Time", "Rs 45,000 / month", "Trianon",
+                            LocalDate.now().plusDays(22), now.minusDays(3), "Junior",
+                            "Build UI screens using modern web practices. Work with APIs and responsive layouts.",
+                            6.8, List.of("BSc (Hons) Computer Science"), List.of("Computer Science")),
+
+                    new Offer("Rogers Capital", "IT Support Technician", "Full-Time", "Rs 32,000 / month", "Phoenix",
+                            LocalDate.now().plusDays(16), now.minusDays(8), "Entry",
+                            "Provide IT support, handle tickets, device setup, and basic network troubleshooting.",
+                            6.0, List.of("BSc (Hons) Computer Science", "BSc (Hons) Information Systems"), List.of("Computer Science", "Information Systems")),
+
+                    new Offer("Jubilee Insurance", "Systems Intern", "Internship", "Rs 14,000 / month", "Curepipe",
+                            LocalDate.now().plusDays(12), now.minusHours(10), "Entry",
+                            "Assist with internal systems, documentation, and simple automation scripts.",
+                            6.0, List.of("BSc (Hons) Computer Science"), List.of("Computer Science")),
+
+                    new Offer("Hotel Group (North)", "IT Assistant", "Internship", "Rs 15,000 / month", "Grand Baie",
+                            LocalDate.now().plusDays(19), now.minusDays(12), "Entry",
+                            "Support hotel IT operations: POS systems, printers, user accounts, and troubleshooting.",
+                            5.8, List.of("BSc (Hons) Computer Science", "BSc (Hons) Information Systems"), List.of("Computer Science", "Information Systems")),
+
+                    new Offer("FinTech Startup", "Backend Engineer", "Full-Time", "Rs 60,000 / month", "Rose Hill",
+                            LocalDate.now().plusDays(26), now.minusDays(5), "Mid",
+                            "Design REST APIs, work with databases, and implement secure backend services.",
+                            7.5, List.of("BSc (Hons) Computer Science"), List.of("Computer Science"))
+            );
+        }
+    }
+}

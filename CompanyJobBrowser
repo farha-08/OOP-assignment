@@ -1,0 +1,707 @@
+import javax.swing.*;
+import javax.swing.border.EmptyBorder;
+import javax.swing.event.DocumentEvent;
+import javax.swing.event.DocumentListener;
+import javax.swing.plaf.basic.BasicButtonUI;
+import javax.swing.table.*;
+import java.awt.*;
+import java.awt.event.*;
+import java.time.*;
+import java.time.format.DateTimeFormatter;
+import java.util.List;
+import java.util.*;
+import java.util.stream.Collectors;
+
+public class CompanyJobsBrowserApp {
+
+    // Palette (your scheme)
+    private static final Color MAIN_BG = Color.decode("#CFCFCF");
+    private static final Color ACCENT  = Color.decode("#545454");
+    private static final Color BTN_BG  = Color.decode("#7D7D7D"); // buttons
+
+    private static final Color ROW_ALT = new Color(0xE2E2E2);
+    private static final Font  TEXTAREA_FONT = new Font("SansSerif", Font.PLAIN, 12);
+
+    // -------------------- MOCK SESSION --------------------
+    private static final CompanyProfile CURRENT_COMPANY = new CompanyProfile(
+            "TechCorp Solutions",     // company name shown in title bar
+            "Jane Harper"             // representative
+    );
+
+    public static void main(String[] args) {
+        SwingUtilities.invokeLater(() -> {
+            try { UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName()); }
+            catch (Exception ignored) {}
+
+            MainFrame f = new MainFrame();
+            SwingUtilities.updateComponentTreeUI(f);
+            f.setVisible(true);
+        });
+    }
+
+    // ==================== MAIN FRAME (CardLayout) ====================
+    static class MainFrame extends JFrame {
+        private final CardLayout cards = new CardLayout();
+        private final JPanel root = new JPanel(cards);
+
+        private final CompanyDashboardPanel dashboardPanel;
+        private final CompanyMyOffersPanel myOffersPanel;
+        private final CreateOfferPanel createOfferPanel;
+
+        MainFrame() {
+            setTitle("Student Placement System - " + CURRENT_COMPANY.companyName);
+            setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+            setSize(1200, 650);
+            setLocationRelativeTo(null);
+
+            dashboardPanel = new CompanyDashboardPanel(this);
+            myOffersPanel = new CompanyMyOffersPanel(this);
+            createOfferPanel = new CreateOfferPanel(this);
+
+            root.setBackground(MAIN_BG);
+            root.add(dashboardPanel, "DASH");
+            root.add(myOffersPanel, "MY_OFFERS");
+            root.add(createOfferPanel, "CREATE");
+
+            setContentPane(root);
+
+            showMyOffers(); // default tab as in screenshot
+        }
+
+        void showDashboard() { cards.show(root, "DASH"); }
+        void showMyOffers()  { cards.show(root, "MY_OFFERS"); }
+        void showCreate()    { cards.show(root, "CREATE"); }
+    }
+
+    // ==================== TOP BAR ====================
+    static class TopBar extends JPanel {
+        TopBar(MainFrame frame, String active) {
+            setLayout(new BorderLayout());
+            setBackground(ACCENT);
+
+            JLabel title = new JLabel("  Student Placement System - " + CURRENT_COMPANY.companyName);
+            title.setForeground(Color.WHITE);
+            title.setFont(new Font("SansSerif", Font.BOLD, 14));
+
+            JPanel nav = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 8));
+            nav.setOpaque(false);
+
+            nav.add(navButton("Dashboard", frame::showDashboard, "Dashboard".equals(active)));
+            nav.add(navButton("My Offers", frame::showMyOffers, "My Offers".equals(active)));
+            nav.add(navButton("Create Offer", frame::showCreate, "Create Offer".equals(active)));
+
+            JButton logout = new JButton("Log Out");
+            styleButton(logout, 110);
+            logout.addActionListener(e -> msg(frame, "Logout (demo)."));
+
+            JPanel right = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 8));
+            right.setOpaque(false);
+            right.add(logout);
+
+            add(title, BorderLayout.WEST);
+            add(nav, BorderLayout.CENTER);
+            add(right, BorderLayout.EAST);
+        }
+
+        private JButton navButton(String text, Runnable onClick, boolean isActive) {
+            JButton b = new JButton(text);
+            b.setFocusPainted(false);
+            b.setFont(new Font("SansSerif", Font.PLAIN, 12));
+            b.setBorder(BorderFactory.createLineBorder(ACCENT));
+            b.addActionListener(e -> onClick.run());
+
+            b.setOpaque(true);
+            b.setContentAreaFilled(true);
+            b.setBorderPainted(true);
+
+            if (isActive) {
+                b.setBackground(BTN_BG);
+                b.setForeground(Color.WHITE);
+            } else {
+                b.setBackground(MAIN_BG);
+                b.setForeground(Color.BLACK);
+            }
+
+            b.setUI(new SolidButtonUI());
+            if (isActive) b.setForeground(Color.WHITE);
+
+            return b;
+        }
+    }
+
+    // ==================== DASHBOARD (simple placeholder) ====================
+    static class CompanyDashboardPanel extends JPanel {
+        CompanyDashboardPanel(MainFrame frame) {
+            setLayout(new BorderLayout());
+            setBackground(MAIN_BG);
+
+            add(new TopBar(frame, "Dashboard"), BorderLayout.NORTH);
+
+            JPanel body = new JPanel(new BorderLayout());
+            body.setBackground(MAIN_BG);
+            body.setBorder(new EmptyBorder(10, 10, 10, 10));
+
+            JPanel center = new JPanel(new BorderLayout());
+            center.setBackground(MAIN_BG);
+            center.setBorder(BorderFactory.createLineBorder(ACCENT));
+
+            JPanel bar = new JPanel(new BorderLayout());
+            bar.setBackground(ACCENT);
+            JLabel sec = new JLabel("  Company Dashboard");
+            sec.setForeground(Color.WHITE);
+            sec.setFont(new Font("SansSerif", Font.BOLD, 13));
+            bar.add(sec, BorderLayout.CENTER);
+
+            center.add(bar, BorderLayout.NORTH);
+
+            JLabel msg = new JLabel("<html><div style='padding:10px;'>" +
+                    "Welcome, <b>" + CURRENT_COMPANY.representativeName + "</b> from <b>" + CURRENT_COMPANY.companyName + "</b>.<br/>" +
+                    "Go to <b>My Offers</b> to browse your job offers.</div></html>");
+            center.add(msg, BorderLayout.CENTER);
+
+            body.add(center, BorderLayout.CENTER);
+            add(body, BorderLayout.CENTER);
+        }
+    }
+
+    // ==================== CREATE OFFER (not your scope - placeholder) ====================
+    static class CreateOfferPanel extends JPanel {
+        CreateOfferPanel(MainFrame frame) {
+            setLayout(new BorderLayout());
+            setBackground(MAIN_BG);
+
+            add(new TopBar(frame, "Create Offer"), BorderLayout.NORTH);
+
+            JPanel body = new JPanel(new BorderLayout());
+            body.setBackground(MAIN_BG);
+            body.setBorder(new EmptyBorder(10, 10, 10, 10));
+
+            JPanel center = new JPanel(new BorderLayout());
+            center.setBackground(MAIN_BG);
+            center.setBorder(BorderFactory.createLineBorder(ACCENT));
+
+            JPanel bar = new JPanel(new BorderLayout());
+            bar.setBackground(ACCENT);
+            JLabel sec = new JLabel("  Create Offer");
+            sec.setForeground(Color.WHITE);
+            sec.setFont(new Font("SansSerif", Font.BOLD, 13));
+            bar.add(sec, BorderLayout.CENTER);
+
+            center.add(bar, BorderLayout.NORTH);
+            center.add(new JLabel("<html><div style='padding:10px;'>" +
+                    "Create Offer screen is not part of your assigned section.<br/>" +
+                    "This is a placeholder panel.</div></html>"), BorderLayout.CENTER);
+
+            body.add(center, BorderLayout.CENTER);
+            add(body, BorderLayout.CENTER);
+        }
+    }
+
+    // ==================== MY OFFERS (YOUR PART) ====================
+    static class CompanyMyOffersPanel extends JPanel {
+        private final MainFrame frame;
+
+        private final JTextField txtSearch = new JTextField();
+        private final JComboBox<String> cbType = new JComboBox<>();
+        private final JComboBox<String> cbLocation = new JComboBox<>();
+        private final JComboBox<String> cbStatus = new JComboBox<>();
+        private final JComboBox<String> cbTime = new JComboBox<>();
+
+        private final JLabel lblStatus = new JLabel(" ");
+
+        private final DefaultTableModel model;
+        private final JTable table;
+        private final TableRowSorter<DefaultTableModel> sorter;
+
+        private final List<CompanyOffer> allCompanyOffers; // already filtered to CURRENT_COMPANY
+
+        CompanyMyOffersPanel(MainFrame frame) {
+            this.frame = frame;
+
+            setLayout(new BorderLayout());
+            setBackground(MAIN_BG);
+
+            add(new TopBar(frame, "My Offers"), BorderLayout.NORTH);
+
+            // load offers and filter to this company
+            List<CompanyOffer> all = MockCompanyData.offers();
+            allCompanyOffers = all.stream()
+                    .filter(o -> o.company.equals(CURRENT_COMPANY.companyName))
+                    .collect(Collectors.toList());
+
+            JPanel body = new JPanel(new BorderLayout());
+            body.setBackground(MAIN_BG);
+            body.setBorder(new EmptyBorder(10, 10, 10, 10));
+
+            JPanel center = new JPanel(new BorderLayout());
+            center.setBackground(MAIN_BG);
+            center.setBorder(BorderFactory.createLineBorder(ACCENT));
+
+            JPanel sectionHeader = new JPanel(new BorderLayout());
+            sectionHeader.setBackground(ACCENT);
+            JLabel sec = new JLabel("  My Offers");
+            sec.setForeground(Color.WHITE);
+            sec.setFont(new Font("SansSerif", Font.BOLD, 13));
+            sectionHeader.add(sec, BorderLayout.CENTER);
+
+            JPanel topWrap = new JPanel(new BorderLayout());
+            topWrap.setBackground(MAIN_BG);
+            topWrap.add(sectionHeader, BorderLayout.NORTH);
+            topWrap.add(buildFiltersPanel(), BorderLayout.CENTER);
+
+            center.add(topWrap, BorderLayout.NORTH);
+
+            String[] cols = {"Title", "Type", "Salary", "Location", "Deadline", "Applicants", "Status"};
+            model = new DefaultTableModel(cols, 0) {
+                @Override public boolean isCellEditable(int row, int col) { return false; }
+            };
+
+            table = new JTable(model);
+            styleTable(table);
+
+            sorter = new TableRowSorter<>(model);
+            table.setRowSorter(sorter);
+
+            // render status (Active green / Closed red)
+            table.getColumnModel().getColumn(6).setCellRenderer(new StatusRenderer());
+
+            // alternate row shading for other columns
+            AlternateRowRenderer alt = new AlternateRowRenderer();
+            for (int i = 0; i < table.getColumnCount(); i++) {
+                if (i != 6) table.getColumnModel().getColumn(i).setCellRenderer(alt);
+            }
+
+            reloadRows(allCompanyOffers);
+
+            table.addMouseListener(new MouseAdapter() {
+                @Override public void mouseClicked(MouseEvent e) {
+                    if (e.getClickCount() == 2 && table.getSelectedRow() != -1) {
+                        openSelectedOffer();
+                    }
+                }
+            });
+
+            JScrollPane sp = new JScrollPane(table);
+            sp.setBorder(BorderFactory.createMatteBorder(1, 0, 1, 0, ACCENT));
+            center.add(sp, BorderLayout.CENTER);
+
+            JPanel bottom = new JPanel(new BorderLayout());
+            bottom.setBackground(MAIN_BG);
+            lblStatus.setBorder(new EmptyBorder(6, 10, 6, 10));
+            bottom.add(lblStatus, BorderLayout.WEST);
+
+            JButton reset = new JButton("Reset Filters");
+            styleButton(reset, 140);
+            reset.addActionListener(e -> resetFilters());
+
+            JButton viewDetails = new JButton("View Details");
+            styleButton(viewDetails, 140);
+            viewDetails.addActionListener(e -> openSelectedOffer());
+
+            JPanel bottomRight = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 6));
+            bottomRight.setBackground(MAIN_BG);
+            bottomRight.add(reset);
+            bottomRight.add(viewDetails);
+
+            bottom.add(bottomRight, BorderLayout.EAST);
+            center.add(bottom, BorderLayout.SOUTH);
+
+            body.add(center, BorderLayout.CENTER);
+            add(body, BorderLayout.CENTER);
+
+            updateStatus();
+            applyFilters();
+        }
+
+        private JPanel buildFiltersPanel() {
+            JPanel p = new JPanel(new BorderLayout());
+            p.setBackground(MAIN_BG);
+            p.setBorder(new EmptyBorder(10, 10, 10, 10));
+
+            JPanel row = new JPanel(new GridBagLayout());
+            row.setBackground(MAIN_BG);
+
+            GridBagConstraints gc = new GridBagConstraints();
+            gc.insets = new Insets(0, 0, 8, 12);
+            gc.anchor = GridBagConstraints.WEST;
+            gc.fill = GridBagConstraints.HORIZONTAL;
+
+            // Search
+            gc.gridx = 0; gc.gridy = 0; gc.weightx = 0;
+            row.add(label("Search:"), gc);
+
+            gc.gridx = 1; gc.gridy = 0; gc.weightx = 1;
+            txtSearch.setToolTipText("Job title...");
+            row.add(txtSearch, gc);
+
+            // Type
+            gc.gridx = 2; gc.gridy = 0; gc.weightx = 0;
+            row.add(label("Type:"), gc);
+
+            gc.gridx = 3; gc.gridy = 0; gc.weightx = 0.4;
+            row.add(cbType, gc);
+
+            // Location
+            gc.gridx = 0; gc.gridy = 1; gc.weightx = 0;
+            row.add(label("Location:"), gc);
+
+            gc.gridx = 1; gc.gridy = 1; gc.weightx = 1;
+            row.add(cbLocation, gc);
+
+            // Status
+            gc.gridx = 2; gc.gridy = 1; gc.weightx = 0;
+            row.add(label("Status:"), gc);
+
+            gc.gridx = 3; gc.gridy = 1; gc.weightx = 0.4;
+            row.add(cbStatus, gc);
+
+            // Time
+            gc.gridx = 0; gc.gridy = 2; gc.weightx = 0;
+            row.add(label("Time:"), gc);
+
+            gc.gridx = 1; gc.gridy = 2; gc.weightx = 1;
+            row.add(cbTime, gc);
+
+            fillFiltersFromData();
+
+            txtSearch.getDocument().addDocumentListener(new DocumentListener() {
+                public void insertUpdate(DocumentEvent e) { applyFilters(); }
+                public void removeUpdate(DocumentEvent e) { applyFilters(); }
+                public void changedUpdate(DocumentEvent e) { applyFilters(); }
+            });
+
+            ActionListener filterListener = e -> applyFilters();
+            cbType.addActionListener(filterListener);
+            cbLocation.addActionListener(filterListener);
+            cbStatus.addActionListener(filterListener);
+            cbTime.addActionListener(filterListener);
+
+            p.add(row, BorderLayout.CENTER);
+
+            JPanel sep = new JPanel();
+            sep.setPreferredSize(new Dimension(1, 1));
+            sep.setBackground(ACCENT);
+            p.add(sep, BorderLayout.SOUTH);
+
+            return p;
+        }
+
+        private JLabel label(String text) {
+            JLabel l = new JLabel(text);
+            l.setForeground(Color.BLACK);
+            l.setFont(new Font("SansSerif", Font.PLAIN, 12));
+            return l;
+        }
+
+        private void fillFiltersFromData() {
+            Set<String> types = allCompanyOffers.stream().map(o -> o.type).collect(Collectors.toCollection(TreeSet::new));
+            cbType.removeAllItems();
+            cbType.addItem("All Types");
+            for (String t : types) cbType.addItem(t);
+
+            Set<String> locs = allCompanyOffers.stream().map(o -> o.location).collect(Collectors.toCollection(TreeSet::new));
+            cbLocation.removeAllItems();
+            cbLocation.addItem("All Locations");
+            for (String loc : locs) cbLocation.addItem(loc);
+
+            cbStatus.removeAllItems();
+            cbStatus.addItem("All");
+            cbStatus.addItem("Active");
+            cbStatus.addItem("Closed");
+
+            cbTime.removeAllItems();
+            cbTime.addItem("Any time");
+            cbTime.addItem("Past month");
+            cbTime.addItem("Past week");
+            cbTime.addItem("Past 24 hours");
+        }
+
+        private void resetFilters() {
+            txtSearch.setText("");
+            cbType.setSelectedIndex(0);
+            cbLocation.setSelectedIndex(0);
+            cbStatus.setSelectedIndex(0);
+            cbTime.setSelectedIndex(0);
+            applyFilters();
+        }
+
+        private void reloadRows(List<CompanyOffer> offers) {
+            model.setRowCount(0);
+            DateTimeFormatter df = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+            for (CompanyOffer o : offers) {
+                model.addRow(new Object[]{
+                        o.title,
+                        o.type,
+                        o.salaryText,
+                        o.location,
+                        df.format(o.deadline),
+                        o.applicantCount,
+                        o.status
+                });
+            }
+        }
+
+        private void applyFilters() {
+            RowFilter<DefaultTableModel, Integer> rf = new RowFilter<>() {
+                @Override
+                public boolean include(Entry<? extends DefaultTableModel, ? extends Integer> entry) {
+                    int modelRow = entry.getIdentifier();
+                    CompanyOffer o = allCompanyOffers.get(modelRow);
+
+                    String q = txtSearch.getText().trim().toLowerCase(Locale.ROOT);
+                    if (!q.isEmpty()) {
+                        if (!o.title.toLowerCase(Locale.ROOT).contains(q)) return false;
+                    }
+
+                    String typePick = (String) cbType.getSelectedItem();
+                    if (typePick != null && !typePick.equals("All Types")) {
+                        if (!o.type.equals(typePick)) return false;
+                    }
+
+                    String locPick = (String) cbLocation.getSelectedItem();
+                    if (locPick != null && !locPick.equals("All Locations")) {
+                        if (!o.location.equals(locPick)) return false;
+                    }
+
+                    String statusPick = (String) cbStatus.getSelectedItem();
+                    if (statusPick != null && !statusPick.equals("All")) {
+                        if (!o.status.equals(statusPick)) return false;
+                    }
+
+                    String timePick = (String) cbTime.getSelectedItem();
+                    if (timePick != null && !timePick.equals("Any time")) {
+                        LocalDateTime now = LocalDateTime.now();
+                        LocalDateTime cutoff;
+                        switch (timePick) {
+                            case "Past month" -> cutoff = now.minusDays(30);
+                            case "Past week" -> cutoff = now.minusDays(7);
+                            case "Past 24 hours" -> cutoff = now.minusHours(24);
+                            default -> cutoff = null;
+                        }
+                        if (cutoff != null && o.postedAt.isBefore(cutoff)) return false;
+                    }
+
+                    return true;
+                }
+            };
+
+            sorter.setRowFilter(rf);
+            updateStatus();
+        }
+
+        private void updateStatus() {
+            int shown = table.getRowCount();
+            lblStatus.setText(shown + " offer(s). Click a row to view details.");
+        }
+
+        private void openSelectedOffer() {
+            int viewRow = table.getSelectedRow();
+            if (viewRow == -1) {
+                msg(frame, "Please select an offer first.");
+                return;
+            }
+            int modelRow = table.convertRowIndexToModel(viewRow);
+            CompanyOffer selected = allCompanyOffers.get(modelRow);
+
+            // Since "Offer Details + Applicants" is NOT your part, we keep it simple:
+            // show a clean details dialog (still looks professional for demo).
+            showOfferDetailsDialog(frame, selected);
+        }
+
+        private void showOfferDetailsDialog(Component parent, CompanyOffer offer) {
+            JTextArea area = new JTextArea();
+            area.setEditable(false);
+            area.setLineWrap(true);
+            area.setWrapStyleWord(true);
+            area.setBackground(Color.WHITE);
+            area.setFont(TEXTAREA_FONT);
+            area.setMargin(new Insets(10, 10, 10, 10));
+
+            DateTimeFormatter df = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+            DateTimeFormatter dt = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
+
+            area.setText(
+                    "Title: " + offer.title + "\n" +
+                    "Type: " + offer.type + "\n" +
+                    "Salary: " + offer.salaryText + "\n" +
+                    "Location: " + offer.location + "\n" +
+                    "Deadline: " + df.format(offer.deadline) + "\n" +
+                    "Posted: " + dt.format(offer.postedAt) + "\n" +
+                    "Applicants: " + offer.applicantCount + "\n" +
+                    "Status: " + offer.status + "\n\n" +
+                    "Description:\n" + offer.description
+            );
+
+            JScrollPane sp = new JScrollPane(area);
+            sp.setPreferredSize(new Dimension(650, 350));
+
+            JOptionPane.showMessageDialog(parent, sp, "Offer Details - " + offer.title, JOptionPane.INFORMATION_MESSAGE);
+        }
+    }
+
+    // ==================== BUTTON UI FIX (forces #7D7D7D) ====================
+    static class SolidButtonUI extends BasicButtonUI {
+        @Override
+        public void paint(Graphics g, JComponent c) {
+            AbstractButton b = (AbstractButton) c;
+            Graphics2D g2 = (Graphics2D) g.create();
+            g2.setColor(b.getBackground());
+            g2.fillRect(0, 0, b.getWidth(), b.getHeight());
+            g2.dispose();
+            super.paint(g, c);
+        }
+    }
+
+    // buttons: grey background, BLACK text
+    private static void styleButton(JButton b, int fixedWidth) {
+        b.setBackground(BTN_BG);
+        b.setForeground(Color.BLACK);
+        b.setFont(new Font("SansSerif", Font.BOLD, 12));
+        b.setFocusPainted(false);
+
+        b.setOpaque(true);
+        b.setContentAreaFilled(true);
+        b.setBorderPainted(true);
+        b.setBorder(BorderFactory.createLineBorder(ACCENT));
+
+        b.setUI(new SolidButtonUI());
+
+        if (fixedWidth > 0) b.setPreferredSize(new Dimension(fixedWidth, 32));
+        else b.setPreferredSize(new Dimension(160, 32));
+    }
+
+    private static void msg(Component parent, String text) {
+        JOptionPane.showMessageDialog(parent, text);
+    }
+
+    // ==================== TABLE STYLE + RENDERERS ====================
+    private static void styleTable(JTable table) {
+        table.setRowHeight(24);
+        table.setFillsViewportHeight(true);
+        table.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+        table.setGridColor(ACCENT);
+        table.setShowHorizontalLines(true);
+        table.setShowVerticalLines(false);
+
+        JTableHeader hdr = table.getTableHeader();
+        hdr.setBackground(MAIN_BG);
+        hdr.setForeground(Color.BLACK);
+        hdr.setBorder(BorderFactory.createLineBorder(ACCENT));
+        hdr.setFont(new Font("SansSerif", Font.BOLD, 12));
+    }
+
+    static class AlternateRowRenderer extends DefaultTableCellRenderer {
+        @Override
+        public Component getTableCellRendererComponent(JTable table, Object value,
+                                                      boolean isSelected, boolean hasFocus,
+                                                      int row, int column) {
+            super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
+
+            if (isSelected) {
+                setBackground(ACCENT);
+                setForeground(Color.WHITE);
+            } else {
+                setBackground((row % 2 == 0) ? Color.WHITE : ROW_ALT);
+                setForeground(Color.BLACK);
+            }
+            return this;
+        }
+    }
+
+    static class StatusRenderer extends DefaultTableCellRenderer {
+        @Override
+        public Component getTableCellRendererComponent(JTable table, Object value,
+                                                      boolean isSelected, boolean hasFocus,
+                                                      int row, int column) {
+            super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
+
+            String s = String.valueOf(value);
+            setFont(getFont().deriveFont(Font.BOLD));
+
+            if (isSelected) {
+                setBackground(ACCENT);
+                setForeground(Color.WHITE);
+                return this;
+            }
+
+            setBackground((row % 2 == 0) ? Color.WHITE : ROW_ALT);
+            if ("Active".equalsIgnoreCase(s)) setForeground(new Color(0x0A6E2A));
+            else if ("Closed".equalsIgnoreCase(s)) setForeground(Color.RED);
+            else setForeground(Color.BLACK);
+
+            return this;
+        }
+    }
+
+    // ==================== MODELS ====================
+    static class CompanyProfile {
+        final String companyName;
+        final String representativeName;
+        CompanyProfile(String companyName, String representativeName) {
+            this.companyName = companyName;
+            this.representativeName = representativeName;
+        }
+    }
+
+    static class CompanyOffer {
+        final String company;
+        final String title;
+        final String type;
+        final String salaryText;
+        final String location;
+        final LocalDate deadline;
+        final LocalDateTime postedAt;
+        final int applicantCount;
+        final String status; // Active / Closed
+        final String description;
+
+        CompanyOffer(String company, String title, String type, String salaryText, String location,
+                     LocalDate deadline, LocalDateTime postedAt, int applicantCount, String status, String description) {
+            this.company = company;
+            this.title = title;
+            this.type = type;
+            this.salaryText = salaryText;
+            this.location = location;
+            this.deadline = deadline;
+            this.postedAt = postedAt;
+            this.applicantCount = applicantCount;
+            this.status = status;
+            this.description = description;
+        }
+    }
+
+    // ==================== MOCK DATA ====================
+    static class MockCompanyData {
+        static List<CompanyOffer> offers() {
+            LocalDateTime now = LocalDateTime.now();
+
+            // Only TechCorp Solutions offers will show (browser is "own company" list)
+            return List.of(
+                    new CompanyOffer("TechCorp Solutions", "Software Engineer", "Full-Time", "Rs 55,000 / month", "Ebène",
+                            LocalDate.now().plusDays(25), now.minusDays(3), 3, "Active",
+                            "Develop backend services, REST APIs, and integrate with databases."),
+
+                    new CompanyOffer("TechCorp Solutions", "QA Intern", "Internship", "Rs 16,000 / month", "Port Louis",
+                            LocalDate.now().plusDays(12), now.minusDays(8), 1, "Active",
+                            "Support QA with test cases, regression testing, and bug reporting."),
+
+                    new CompanyOffer("TechCorp Solutions", "Frontend Developer", "Full-Time", "Rs 45,000 / month", "Trianon",
+                            LocalDate.now().plusDays(18), now.minusHours(20), 6, "Active",
+                            "Build UI screens, integrate APIs, ensure responsive layouts and clean UX."),
+
+                    new CompanyOffer("TechCorp Solutions", "IT Support Technician", "Full-Time", "Rs 32,000 / month", "Curepipe",
+                            LocalDate.now().plusDays(9), now.minusDays(20), 5, "Closed",
+                            "Handle tickets, device setup, troubleshooting, and basic networking tasks."),
+
+                    // other companies exist but should NOT appear in My Offers list
+                    new CompanyOffer("MCB Ltd", "Software Engineer", "Full-Time", "Rs 60,000 / month", "Ebène",
+                            LocalDate.now().plusDays(30), now.minusDays(2), 12, "Active",
+                            "Banking software engineering role."),
+
+                    new CompanyOffer("SBM Bank (Mauritius)", "Data Analyst", "Full-Time", "Rs 50,000 / month", "Port Louis",
+                            LocalDate.now().plusDays(16), now.minusDays(6), 7, "Active",
+                            "Data analysis and dashboarding.")
+            );
+        }
+    }
+}
