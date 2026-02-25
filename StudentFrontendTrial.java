@@ -15,6 +15,13 @@ public class StudentFrontendTrial {
     private static Company currentCompany = null;
     private static Admin currentAdmin = null;
 
+    // ===== UI THEME (matches screenshots) =====
+    static final Color MAIN_BG = new Color(0xCF, 0xCF, 0xCF);      // #CFCFCF
+    static final Color ACCENT = new Color(0x54, 0x54, 0x54);       // #545454
+    static final Color BTN = new Color(0x7D, 0x7D, 0x7D);          // #7D7D7D
+    static final Color CARD_BG = new Color(0xE6, 0xE3, 0xD6);      // beige-grey like screenshot
+    static final Color BORDER = new Color(0x9A, 0x9A, 0x9A);
+
     public static void main(String[] args) {
         SwingUtilities.invokeLater(() -> {
             UIManager.put("swing.boldMetal", Boolean.FALSE);
@@ -61,7 +68,6 @@ public class StudentFrontendTrial {
             currentStudent = null;
             currentCompany = null;
             currentAdmin = null;
-
             cards.show(root, "LOGIN");
             loginPanel.reset();
         }
@@ -75,7 +81,6 @@ public class StudentFrontendTrial {
             currentStudent = student;
             currentCompany = null;
             currentAdmin = null;
-
             studentShellPanel.refreshForStudent(student);
             cards.show(root, "STUDENT_SHELL");
         }
@@ -84,7 +89,6 @@ public class StudentFrontendTrial {
             currentCompany = company;
             currentStudent = null;
             currentAdmin = null;
-
             companyShellPanel.refreshForCompany(company);
             cards.show(root, "COMPANY_SHELL");
         }
@@ -93,7 +97,6 @@ public class StudentFrontendTrial {
             currentAdmin = admin;
             currentStudent = null;
             currentCompany = null;
-
             adminShellPanel.refreshForAdmin(admin);
             cards.show(root, "ADMIN_SHELL");
         }
@@ -119,13 +122,12 @@ public class StudentFrontendTrial {
             this.frame = frame;
 
             setLayout(new BorderLayout());
-            setBackground(new Color(245, 247, 250));
+            setBackground(MAIN_BG);
 
             JPanel page = new JPanel(new BorderLayout());
             page.setOpaque(false);
             page.setBorder(new EmptyBorder(26, 26, 26, 26));
 
-            // Header (full width)
             JPanel header = new JPanel(new BorderLayout());
             header.setBackground(Color.WHITE);
             header.setBorder(BorderFactory.createCompoundBorder(
@@ -143,7 +145,6 @@ public class StudentFrontendTrial {
             header.add(brand, BorderLayout.WEST);
             header.add(hint, BorderLayout.EAST);
 
-            // Body (fills all remaining space)
             JPanel body = new JPanel(new GridBagLayout());
             body.setOpaque(false);
 
@@ -153,8 +154,6 @@ public class StudentFrontendTrial {
                     new EmptyBorder(22, 22, 22, 22)
             ));
             formCard.setBackground(Color.WHITE);
-
-            // Let card grow with window (instead of fixed preferred size)
             formCard.setMinimumSize(new Dimension(520, 420));
 
             GridBagConstraints gc = new GridBagConstraints();
@@ -162,7 +161,7 @@ public class StudentFrontendTrial {
             gc.gridy = 0;
             gc.weightx = 1;
             gc.weighty = 1;
-            gc.fill = GridBagConstraints.BOTH; // <-- this makes it take the space
+            gc.fill = GridBagConstraints.BOTH;
             body.add(formCard, gc);
 
             page.add(header, BorderLayout.NORTH);
@@ -176,6 +175,7 @@ public class StudentFrontendTrial {
         private JPanel buildLoginFormCard() {
             JPanel card = new JPanel(new GridBagLayout());
             card.setOpaque(true);
+            card.setBackground(Color.WHITE);
 
             GridBagConstraints gc = new GridBagConstraints();
             gc.insets = new Insets(8, 8, 8, 8);
@@ -186,20 +186,16 @@ public class StudentFrontendTrial {
             sub.setFont(new Font("SansSerif", Font.PLAIN, 12));
             sub.setForeground(new Color(90, 90, 90));
 
-            // row 0: title
             gc.gridx = 0; gc.gridy = 0; gc.gridwidth = 2;
             card.add(title, gc);
 
-            // row 1: sub
             gc.gridy++;
             card.add(sub, gc);
 
-            // row 2: role label
             gc.gridy++;
             gc.gridwidth = 2;
             card.add(label("Role"), gc);
 
-            // row 3: role radios
             gc.gridy++;
             JPanel roleRow = new JPanel(new FlowLayout(FlowLayout.LEFT, 12, 0));
             roleRow.setBackground(Color.WHITE);
@@ -222,31 +218,25 @@ public class StudentFrontendTrial {
             roleRow.add(rbAdmin);
             card.add(roleRow, gc);
 
-            // row 4: identifier label
             gc.gridy++;
             card.add(label("Username or Email"), gc);
 
-            // row 5: identifier field
             gc.gridy++;
             styleField(txtIdentifier);
             card.add(txtIdentifier, gc);
 
-            // row 6: password label
             gc.gridy++;
             card.add(label("Password"), gc);
 
-            // row 7: password field
             gc.gridy++;
             styleField(txtPass);
             card.add(txtPass, gc);
 
-            // row 8: error
             gc.gridy++;
             lblError.setForeground(new Color(190, 40, 40));
             lblError.setFont(new Font("SansSerif", Font.PLAIN, 12));
             card.add(lblError, gc);
 
-            // row 9: buttons (login + register)
             gc.gridy++;
             JPanel actions = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 0));
             actions.setBackground(Color.WHITE);
@@ -261,10 +251,8 @@ public class StudentFrontendTrial {
 
             actions.add(btnLogin);
             actions.add(btnRegister);
-
             card.add(actions, gc);
 
-            // Spacer to allow vertical stretching nicely
             gc.gridy++;
             gc.weighty = 1;
             gc.fill = GridBagConstraints.BOTH;
@@ -386,13 +374,12 @@ public class StudentFrontendTrial {
             this.frame = frame;
 
             setLayout(new BorderLayout());
-            setBackground(new Color(245, 247, 250));
+            setBackground(MAIN_BG);
 
             JPanel page = new JPanel(new BorderLayout());
             page.setOpaque(false);
             page.setBorder(new EmptyBorder(26, 26, 26, 26));
 
-            // Header full width
             JPanel header = new JPanel(new BorderLayout());
             header.setBackground(Color.WHITE);
             header.setBorder(BorderFactory.createCompoundBorder(
@@ -419,7 +406,6 @@ public class StudentFrontendTrial {
             header.add(headerLeft, BorderLayout.WEST);
             header.add(btnBack, BorderLayout.EAST);
 
-            // Main body (fills window)
             JPanel body = new JPanel(new BorderLayout());
             body.setOpaque(false);
 
@@ -430,7 +416,6 @@ public class StudentFrontendTrial {
                     new EmptyBorder(18, 18, 18, 18)
             ));
 
-            // Role row
             JPanel roleRow = new JPanel(new FlowLayout(FlowLayout.LEFT, 12, 0));
             roleRow.setBackground(Color.WHITE);
 
@@ -449,7 +434,6 @@ public class StudentFrontendTrial {
 
             card.add(roleRow, BorderLayout.NORTH);
 
-            // Forms in a scroll that fills remaining space
             regRoot.setBackground(Color.WHITE);
             regRoot.add(buildStudentForm(), "STUDENT");
             regRoot.add(buildCompanyForm(), "COMPANY");
@@ -461,7 +445,6 @@ public class StudentFrontendTrial {
 
             card.add(sc, BorderLayout.CENTER);
 
-            // Bottom actions
             JPanel bottom = new JPanel(new BorderLayout());
             bottom.setBackground(Color.WHITE);
 
@@ -536,7 +519,6 @@ public class StudentFrontendTrial {
             gc.weightx = 1;
 
             int r = 0;
-
             addField(p, gc, r++, "First Name", txtFirst);
             addField(p, gc, r++, "Last Name", txtLast);
             addField(p, gc, r++, "Email", txtEmail);
@@ -546,7 +528,6 @@ public class StudentFrontendTrial {
             addField(p, gc, r++, "Course", txtCourse);
             addField(p, gc, r++, "Year of Study", txtYear);
 
-            // spacer to allow nice filling in scroll
             gc.gridx = 0; gc.gridy = r; gc.gridwidth = 2;
             gc.weighty = 1;
             gc.fill = GridBagConstraints.BOTH;
@@ -565,7 +546,6 @@ public class StudentFrontendTrial {
             gc.weightx = 1;
 
             int r = 0;
-
             addField(p, gc, r++, "Company Name", txtCompanyName);
             addField(p, gc, r++, "Company Email", txtCompanyEmail);
             addField(p, gc, r++, "Password", txtCompanyPass);
@@ -619,31 +599,19 @@ public class StudentFrontendTrial {
             }
 
             int year;
-            try {
-                year = Integer.parseInt(yearStr);
-            } catch (Exception ex) {
-                lblError.setText("Year must be a number.");
-                return;
-            }
+            try { year = Integer.parseInt(yearStr); }
+            catch (Exception ex) { lblError.setText("Year must be a number."); return; }
 
             String fullName = first + " " + last;
 
             for (Student s : MockDB.students) {
-                if (s.fullName.equalsIgnoreCase(fullName)) {
-                    lblError.setText("A student with that name already exists.");
-                    return;
-                }
-                if (s.email.equalsIgnoreCase(email)) {
-                    lblError.setText("Email already in use.");
-                    return;
-                }
+                if (s.fullName.equalsIgnoreCase(fullName)) { lblError.setText("A student with that name already exists."); return; }
+                if (s.email.equalsIgnoreCase(email)) { lblError.setText("Email already in use."); return; }
             }
 
             String newId = "S" + String.format("%03d", MockDB.students.size() + 1);
-            Student newStudent = new Student(
-                    newId, fullName, email, pass,
-                    course, faculty, String.valueOf(year), 0.0
-            );
+            Student newStudent = new Student(newId, fullName, email, pass,
+                    course, faculty, String.valueOf(year), 0.0);
 
             MockDB.students.add(newStudent);
 
@@ -670,10 +638,7 @@ public class StudentFrontendTrial {
             }
 
             for (Company c : MockDB.companies) {
-                if (c.email.equalsIgnoreCase(email)) {
-                    lblError.setText("Company email already in use.");
-                    return;
-                }
+                if (c.email.equalsIgnoreCase(email)) { lblError.setText("Company email already in use."); return; }
             }
 
             String newId = "C" + String.format("%03d", MockDB.companies.size() + 1);
@@ -711,158 +676,670 @@ public class StudentFrontendTrial {
         }
     }
 
-    // ==================== STUDENT SHELL (Sidebar + Content) ====================
+    // ==================== STUDENT SHELL (Top Nav like screenshots) ====================
     static class StudentShellPanel extends JPanel {
         private final MainFrame frame;
 
-        private final CardLayout contentCards = new CardLayout();
-        private final JPanel content = new JPanel(contentCards);
+        private final CardLayout pageCards = new CardLayout();
+        private final JPanel pageRoot = new JPanel(pageCards);
 
-        private final JLabel lblWelcome = new JLabel("Welcome, Student");
+        private final JLabel lblTitle = new JLabel();
+        private final JLabel lblFooter = new JLabel("Logged in as: -");
 
+        // Pages
+        private final StudentDashboardPanel dashboardPanel = new StudentDashboardPanel();
         private final StudentProfilePanel profilePanel = new StudentProfilePanel();
         private final StudentApplicationsPanel appsPanel = new StudentApplicationsPanel();
+        private final StudentPolicyPanel policyPanel = new StudentPolicyPanel();
+
+        // Offers panel is done by your friend → plug it later
+        private final JPanel offersPlaceholder = new JPanel(new BorderLayout());
 
         StudentShellPanel(MainFrame frame) {
             this.frame = frame;
             setLayout(new BorderLayout());
+            setBackground(MAIN_BG);
 
-            JPanel sidebar = buildSidebar();
-            JPanel topbar = buildTopbar();
+            add(buildTopHeader(), BorderLayout.NORTH);
+            add(buildCenter(), BorderLayout.CENTER);
+            add(buildFooter(), BorderLayout.SOUTH);
 
-            content.add(buildHomePanel(), "HOME");
-            content.add(profilePanel, "PROFILE");
-            content.add(appsPanel, "APPS");
-
-            add(sidebar, BorderLayout.WEST);
-            add(topbar, BorderLayout.NORTH);
-            add(content, BorderLayout.CENTER);
+            offersPlaceholder.setBackground(CARD_BG);
+            offersPlaceholder.setBorder(BorderFactory.createLineBorder(BORDER));
+            JLabel msg = new JLabel("Offers screen is implemented by another teammate.");
+            msg.setBorder(new EmptyBorder(16, 16, 16, 16));
+            offersPlaceholder.add(msg, BorderLayout.NORTH);
         }
 
         void refreshForStudent(Student s) {
-            lblWelcome.setText("Welcome, " + s.fullName);
+            lblTitle.setText("Student Placement System – " + s.fullName);
+            lblFooter.setText("Logged in as: " + s.email + " (Student)");
+
+            dashboardPanel.loadStudent(s);
             profilePanel.loadStudent(s);
             appsPanel.loadApplicationsForStudent(s.id);
-            contentCards.show(content, "HOME");
+
+            showPage("DASH");
         }
 
-        private JPanel buildSidebar() {
-            JPanel side = new JPanel();
-            side.setPreferredSize(new Dimension(220, 0));
-            side.setBackground(new Color(26, 35, 50));
-            side.setLayout(new BoxLayout(side, BoxLayout.Y_AXIS));
-            side.setBorder(new EmptyBorder(18, 14, 18, 14));
-
-            JLabel brand = new JLabel("Placement System");
-            brand.setForeground(Color.WHITE);
-            brand.setFont(new Font("SansSerif", Font.BOLD, 15));
-
-            JLabel module = new JLabel("Student Module");
-            module.setForeground(new Color(180, 190, 205));
-            module.setFont(new Font("SansSerif", Font.PLAIN, 12));
-
-            side.add(brand);
-            side.add(Box.createVerticalStrut(4));
-            side.add(module);
-            side.add(Box.createVerticalStrut(18));
-
-            side.add(sideBtn("Dashboard", () -> contentCards.show(content, "HOME")));
-            side.add(Box.createVerticalStrut(8));
-            side.add(sideBtn("Profile", () -> contentCards.show(content, "PROFILE")));
-            side.add(Box.createVerticalStrut(8));
-            side.add(sideBtn("My Applications", () -> contentCards.show(content, "APPS")));
-
-            side.add(Box.createVerticalGlue());
-
-            JButton logout = sideBtn("Logout", frame::showLogin);
-            logout.setBackground(new Color(60, 76, 108));
-            side.add(logout);
-
-            return side;
+        void showPage(String key) {
+            pageCards.show(pageRoot, key);
         }
 
-        private JPanel buildTopbar() {
-            JPanel top = new JPanel(new BorderLayout());
-            top.setBackground(Color.WHITE);
-            top.setBorder(BorderFactory.createMatteBorder(0, 0, 1, 0, new Color(230, 235, 242)));
-            top.setPreferredSize(new Dimension(0, 56));
+        private JPanel buildTopHeader() {
+            JPanel wrapper = new JPanel(new BorderLayout());
+            wrapper.setBackground(MAIN_BG);
 
-            lblWelcome.setBorder(new EmptyBorder(0, 18, 0, 0));
-            lblWelcome.setFont(new Font("SansSerif", Font.BOLD, 14));
+            JPanel header = new JPanel(new BorderLayout());
+            header.setBackground(ACCENT);
+            header.setBorder(new EmptyBorder(6, 10, 6, 10));
 
-            top.add(lblWelcome, BorderLayout.WEST);
+            lblTitle.setForeground(Color.WHITE);
+            lblTitle.setFont(new Font("SansSerif", Font.BOLD, 14));
+            header.add(lblTitle, BorderLayout.WEST);
 
-            JLabel hint = new JLabel("Frontend-only demo (mock data)");
-            hint.setBorder(new EmptyBorder(0, 0, 0, 18));
-            hint.setForeground(new Color(120, 120, 120));
-            hint.setFont(new Font("SansSerif", Font.PLAIN, 12));
+            JButton btnLogout = greyButton("Log Out");
+            btnLogout.addActionListener(e -> frame.showLogin());
 
-            top.add(hint, BorderLayout.EAST);
-            return top;
+            JPanel right = new JPanel(new FlowLayout(FlowLayout.RIGHT, 0, 0));
+            right.setBackground(ACCENT);
+            right.add(btnLogout);
+            header.add(right, BorderLayout.EAST);
+
+            JPanel nav = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 6));
+            nav.setBackground(MAIN_BG);
+            nav.setBorder(BorderFactory.createMatteBorder(0, 0, 1, 0, BORDER));
+
+            JButton bDash = navButton("Dashboard");
+            JButton bProfile = navButton("Profile");
+            JButton bOffers = navButton("Offers");
+            JButton bApps = navButton("Applications");
+            JButton bPolicy = navButton("Policy");
+
+            bDash.addActionListener(e -> showPage("DASH"));
+            bProfile.addActionListener(e -> showPage("PROFILE"));
+            bOffers.addActionListener(e -> showPage("OFFERS"));
+            bApps.addActionListener(e -> showPage("APPS"));
+            bPolicy.addActionListener(e -> showPage("POLICY"));
+
+            nav.add(bDash);
+            nav.add(bProfile);
+            nav.add(bOffers);
+            nav.add(bApps);
+            nav.add(bPolicy);
+
+            wrapper.add(header, BorderLayout.NORTH);
+            wrapper.add(nav, BorderLayout.CENTER);
+
+            return wrapper;
         }
 
-        private JPanel buildHomePanel() {
-            JPanel p = new JPanel(new BorderLayout());
-            p.setBackground(new Color(245, 247, 250));
+        private JPanel buildCenter() {
+            JPanel center = new JPanel(new BorderLayout());
+            center.setBackground(MAIN_BG);
+            center.setBorder(new EmptyBorder(10, 10, 10, 10));
 
-            JPanel card = new JPanel();
-            card.setBackground(Color.WHITE);
-            card.setBorder(new EmptyBorder(18, 18, 18, 18));
-            card.setLayout(new BoxLayout(card, BoxLayout.Y_AXIS));
+            pageRoot.setBackground(MAIN_BG);
+            pageRoot.add(dashboardPanel, "DASH");
+            pageRoot.add(profilePanel, "PROFILE");
+            pageRoot.add(offersPlaceholder, "OFFERS"); // replace with teammate panel later
+            pageRoot.add(appsPanel, "APPS");
+            pageRoot.add(policyPanel, "POLICY");
 
-            JLabel t = new JLabel("Student Dashboard");
-            t.setFont(new Font("SansSerif", Font.BOLD, 18));
+            center.add(pageRoot, BorderLayout.CENTER);
+            return center;
+        }
 
-            JLabel d = new JLabel("<html>Use the sidebar to view your <b>Profile</b> and <b>My Applications</b>.</html>");
-            d.setForeground(new Color(90, 90, 90));
-            d.setFont(new Font("SansSerif", Font.PLAIN, 13));
+        private JPanel buildFooter() {
+            JPanel foot = new JPanel(new BorderLayout());
+            foot.setBackground(MAIN_BG);
+            foot.setBorder(BorderFactory.createMatteBorder(1, 0, 0, 0, BORDER));
+            lblFooter.setBorder(new EmptyBorder(4, 8, 4, 8));
+            foot.add(lblFooter, BorderLayout.WEST);
+            return foot;
+        }
+    }
 
-            card.add(t);
-            card.add(Box.createVerticalStrut(8));
-            card.add(d);
-            card.add(Box.createVerticalStrut(16));
+    // ==================== DASHBOARD (matches screenshot layout) ====================
+    static class StudentDashboardPanel extends JPanel {
+        private Student student;
 
-            JPanel quick = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 0));
-            quick.setBackground(Color.WHITE);
+        private final JLabel lblWelcome = new JLabel("Welcome back, -");
+        private final JLabel lblAppsCount = new JLabel("0");
+        private final JLabel lblOffersCount = new JLabel("0");
+        private final JLabel lblPlacement = new JLabel("Not Placed");
 
-            JButton b1 = new JButton("Open Profile");
-            JButton b2 = new JButton("Open My Applications");
-            styleActionBtn(b1);
-            styleActionBtn(b2);
+        private final JPanel recentList = new JPanel();
 
-            b1.addActionListener(e -> contentCards.show(content, "PROFILE"));
-            b2.addActionListener(e -> contentCards.show(content, "APPS"));
+        StudentDashboardPanel() {
+            setLayout(new BorderLayout());
+            setBackground(MAIN_BG);
 
-            quick.add(b1);
-            quick.add(b2);
+            JPanel container = new JPanel();
+            container.setBackground(MAIN_BG);
+            container.setLayout(new BoxLayout(container, BoxLayout.Y_AXIS));
 
-            card.add(quick);
+            container.add(sectionBar("Dashboard"));
 
-            JPanel wrap = new JPanel(new GridBagLayout());
-            wrap.setBackground(new Color(245, 247, 250));
-            wrap.add(card);
+            JPanel topArea = new JPanel();
+            topArea.setBackground(CARD_BG);
+            topArea.setBorder(BorderFactory.createLineBorder(BORDER));
+            topArea.setLayout(new BoxLayout(topArea, BoxLayout.Y_AXIS));
+            topArea.setAlignmentX(Component.LEFT_ALIGNMENT);
 
-            p.add(wrap, BorderLayout.CENTER);
+            lblWelcome.setBorder(new EmptyBorder(10, 10, 6, 10));
+            lblWelcome.setFont(new Font("SansSerif", Font.PLAIN, 13));
+            topArea.add(lblWelcome);
+
+            JPanel cards = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 10));
+            cards.setBackground(CARD_BG);
+
+            cards.add(statCard("My Applications", lblAppsCount, "Total applications"));
+            cards.add(statCard("Active Offers", lblOffersCount, "Available offers"));
+            cards.add(statusCard("Placement Status", lblPlacement, "Keep applying!"));
+
+            topArea.add(cards);
+            container.add(topArea);
+
+            container.add(Box.createVerticalStrut(10));
+
+            container.add(sectionBar("Quick Links"));
+            JPanel quick = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 10));
+            quick.setBackground(CARD_BG);
+            quick.setBorder(BorderFactory.createLineBorder(BORDER));
+            quick.setAlignmentX(Component.LEFT_ALIGNMENT);
+
+            JButton bBrowse = linkBtn("Browse Offers");
+            JButton bMyApps = linkBtn("My Applications");
+            JButton bEdit = linkBtn("Edit Profile");
+
+            bBrowse.addActionListener(e -> switchTo("OFFERS"));
+            bMyApps.addActionListener(e -> switchTo("APPS"));
+            bEdit.addActionListener(e -> switchTo("PROFILE"));
+
+            quick.add(bBrowse);
+            quick.add(bMyApps);
+            quick.add(bEdit);
+
+            container.add(quick);
+
+            container.add(Box.createVerticalStrut(10));
+
+            container.add(sectionBar("Recent Applications"));
+            recentList.setLayout(new BoxLayout(recentList, BoxLayout.Y_AXIS));
+            recentList.setBackground(CARD_BG);
+            recentList.setBorder(BorderFactory.createCompoundBorder(
+                    BorderFactory.createLineBorder(BORDER),
+                    new EmptyBorder(10, 10, 10, 10)
+            ));
+            recentList.setAlignmentX(Component.LEFT_ALIGNMENT);
+
+            container.add(recentList);
+
+            add(container, BorderLayout.NORTH);
+        }
+
+        void loadStudent(Student s) {
+            this.student = s;
+            lblWelcome.setText("Welcome back, " + s.fullName + "!");
+            refreshStatsAndRecent();
+        }
+
+        private void refreshStatsAndRecent() {
+            if (student == null) return;
+
+            List<ApplicationView> apps = MockApplicationService.getApplicationsForStudent(student.id);
+            lblAppsCount.setText(String.valueOf(apps.size()));
+
+            // Offers count: teammate will handle real offers; keep a mock number for UI
+            lblOffersCount.setText("6");
+
+            boolean placed = false;
+            for (ApplicationView a : apps) {
+                if (a.status == ApplicationStatus.ACCEPTED) { placed = true; break; }
+            }
+            lblPlacement.setText(placed ? "Placed" : "Not Placed");
+
+            recentList.removeAll();
+            int shown = 0;
+            for (ApplicationView a : apps) {
+                recentList.add(recentRow(a.offerTitle, a.companyName, a.status));
+                shown++;
+                if (shown == 2) break;
+            }
+            if (apps.isEmpty()) {
+                JLabel none = new JLabel("No recent applications.");
+                recentList.add(none);
+            }
+
+            recentList.revalidate();
+            recentList.repaint();
+        }
+
+        private JPanel sectionBar(String text) {
+            JPanel bar = new JPanel(new BorderLayout());
+            bar.setBackground(ACCENT);
+            bar.setBorder(new EmptyBorder(4, 8, 4, 8));
+            bar.add(headerLabel(text), BorderLayout.WEST);
+            bar.setAlignmentX(Component.LEFT_ALIGNMENT);
+            return bar;
+        }
+
+        private JPanel statCard(String title, JLabel big, String sub) {
+            JPanel p = titledBlock(title);
+            p.setPreferredSize(new Dimension(240, 95));
+            p.setLayout(new BoxLayout(p, BoxLayout.Y_AXIS));
+            big.setFont(new Font("SansSerif", Font.BOLD, 28));
+            big.setBorder(new EmptyBorder(2, 8, 0, 8));
+            JLabel s = new JLabel(sub);
+            s.setBorder(new EmptyBorder(0, 10, 8, 10));
+            p.add(big);
+            p.add(s);
             return p;
         }
 
-        private JButton sideBtn(String text, Runnable onClick) {
+        private JPanel statusCard(String title, JLabel big, String sub) {
+            JPanel p = titledBlock(title);
+            p.setPreferredSize(new Dimension(240, 95));
+            p.setLayout(new BoxLayout(p, BoxLayout.Y_AXIS));
+            big.setFont(new Font("SansSerif", Font.BOLD, 18));
+            big.setForeground(new Color(90, 90, 90));
+            big.setBorder(new EmptyBorder(10, 10, 0, 10));
+            JLabel s = new JLabel(sub);
+            s.setBorder(new EmptyBorder(0, 10, 8, 10));
+            p.add(big);
+            p.add(s);
+            return p;
+        }
+
+        private JPanel recentRow(String role, String company, ApplicationStatus status) {
+            JPanel row = new JPanel(new BorderLayout());
+            row.setBackground(CARD_BG);
+            row.setBorder(BorderFactory.createCompoundBorder(
+                    BorderFactory.createLineBorder(BORDER),
+                    new EmptyBorder(8, 10, 8, 10)
+            ));
+
+            JLabel left = new JLabel("<html><b>" + role + "</b> at " + company + "</html>");
+            row.add(left, BorderLayout.WEST);
+
+            JLabel tag = new JLabel(pretty(status));
+            tag.setOpaque(true);
+            tag.setBorder(new EmptyBorder(2, 8, 2, 8));
+            tag.setForeground(Color.WHITE);
+            tag.setBackground(status == ApplicationStatus.SHORTLISTED ? ACCENT : BTN);
+            row.add(tag, BorderLayout.EAST);
+
+            row.setMaximumSize(new Dimension(Integer.MAX_VALUE, 44));
+            return row;
+        }
+
+        private JButton linkBtn(String text) {
             JButton b = new JButton(text);
-            b.setAlignmentX(Component.LEFT_ALIGNMENT);
-            b.setMaximumSize(new Dimension(Integer.MAX_VALUE, 38));
             b.setFocusPainted(false);
+            b.setBackground(MAIN_BG);
+            b.setBorder(BorderFactory.createLineBorder(BORDER));
             b.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-            b.setForeground(Color.WHITE);
-            b.setBackground(new Color(40, 52, 74));
-            b.setBorder(BorderFactory.createEmptyBorder(10, 12, 10, 12));
-            b.addActionListener(e -> onClick.run());
             return b;
         }
 
-        private void styleActionBtn(JButton b) {
-            b.setFocusPainted(false);
-            b.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-            b.setBorder(BorderFactory.createEmptyBorder(8, 12, 8, 12));
+        private String pretty(ApplicationStatus s) {
+            String t = s.name().toLowerCase();
+            return Character.toUpperCase(t.charAt(0)) + t.substring(1);
+        }
+
+        private void switchTo(String key) {
+            Container c = this;
+            while (c != null && !(c instanceof StudentShellPanel)) c = c.getParent();
+            if (c instanceof StudentShellPanel shell) shell.showPage(key);
+        }
+    }
+
+    // ==================== PROFILE (screenshot style, scrollable) ====================
+    static class StudentProfilePanel extends JPanel {
+        private Student workingCopy;
+
+        private final JTextField txtFullName = new JTextField();
+        private final JTextField txtEmail = new JTextField();
+        private final JTextField txtUsername = new JTextField();
+        private final JTextField txtPhone = new JTextField();
+
+        private final JComboBox<String> cmbCourse = new JComboBox<>(new String[]{
+                "B.Tech", "BSc (Hons) Computer Science", "BSc", "Other"
+        });
+        private final JComboBox<String> cmbBranch = new JComboBox<>(new String[]{
+                "Computer Science", "Software Eng", "Information Systems", "Other"
+        });
+        private final JComboBox<String> cmbSection = new JComboBox<>(new String[]{"A", "B", "C"});
+        private final JTextField txtCgpa = new JTextField();
+        private final JTextField txtYear = new JTextField();
+
+        private final JButton btnEdit = new JButton("Edit");
+        private boolean editing = false;
+
+        private final JPasswordField curPass = new JPasswordField();
+        private final JPasswordField newPass = new JPasswordField();
+        private final JPasswordField confPass = new JPasswordField();
+
+        StudentProfilePanel() {
+            setLayout(new BorderLayout());
+            setBackground(MAIN_BG);
+
+            JPanel page = new JPanel();
+            page.setBackground(MAIN_BG);
+            page.setLayout(new BoxLayout(page, BoxLayout.Y_AXIS));
+
+            page.add(sectionBar("My Profile"));
+
+            JPanel personal = titledBlock("Personal Information");
+            personal.setLayout(new GridBagLayout());
+            addFormRows(personal,
+                    "Full Name:", txtFullName,
+                    "Email:", txtEmail,
+                    "Username:", txtUsername,
+                    "Phone:", txtPhone
+            );
+
+            JPanel academic = titledBlock("Academic Details");
+            academic.setLayout(new GridBagLayout());
+            addFormRows(academic,
+                    "Course:", cmbCourse,
+                    "Branch:", cmbBranch,
+                    "Section:", cmbSection,
+                    "CGPA:", txtCgpa,
+                    "Year:", txtYear
+            );
+
+            JPanel editRow = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 0));
+            editRow.setBackground(CARD_BG);
+            btnEdit.setFocusPainted(false);
+            btnEdit.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+            btnEdit.setBackground(MAIN_BG);
+            btnEdit.setBorder(BorderFactory.createLineBorder(BORDER));
+            btnEdit.addActionListener(e -> toggleEdit());
+            editRow.add(btnEdit);
+
+            page.add(wrapCard(personal));
+            page.add(Box.createVerticalStrut(10));
+            page.add(wrapCard(academic));
+            page.add(Box.createVerticalStrut(10));
+            page.add(wrapCard(editRow));
+
+            page.add(Box.createVerticalStrut(12));
+            page.add(sectionBar("Change Password"));
+
+            JPanel pass = titledBlock("Password");
+            pass.setLayout(new GridBagLayout());
+            addFormRows(pass,
+                    "Current Password:", curPass,
+                    "New Password:", newPass,
+                    "Confirm Password:", confPass
+            );
+
+            page.add(wrapCard(pass));
+
+            JScrollPane sc = new JScrollPane(page);
+            sc.setBorder(null);
+            sc.getViewport().setBackground(MAIN_BG);
+
+            add(sc, BorderLayout.CENTER);
+
+            setEditing(false);
+        }
+
+        void loadStudent(Student s) {
+            workingCopy = new Student(s);
+
+            txtFullName.setText(workingCopy.fullName);
+            txtEmail.setText(workingCopy.email);
+
+            txtUsername.setText(workingCopy.fullName.toLowerCase().replace(" ", "_"));
+            txtPhone.setText("555-0101");
+
+            cmbCourse.setSelectedItem(workingCopy.course);
+            cmbBranch.setSelectedItem(workingCopy.branch);
+            cmbSection.setSelectedItem("A");
+            txtCgpa.setText(String.valueOf(workingCopy.gpa));
+            txtYear.setText(workingCopy.section);
+
+            setEditing(false);
+        }
+
+        private void toggleEdit() {
+            setEditing(!editing);
+
+            if (!editing && workingCopy != null) {
+                workingCopy.fullName = txtFullName.getText().trim();
+                workingCopy.email = txtEmail.getText().trim();
+                workingCopy.course = String.valueOf(cmbCourse.getSelectedItem());
+                workingCopy.branch = String.valueOf(cmbBranch.getSelectedItem());
+                workingCopy.section = txtYear.getText().trim();
+                try { workingCopy.gpa = Double.parseDouble(txtCgpa.getText().trim()); } catch (Exception ignored) {}
+
+                MockStudentService.updateStudent(workingCopy);
+            }
+        }
+
+        private void setEditing(boolean on) {
+            editing = on;
+            btnEdit.setText(on ? "Save" : "Edit");
+
+            txtFullName.setEditable(on);
+            txtEmail.setEditable(on);
+            txtUsername.setEditable(on);
+            txtPhone.setEditable(on);
+
+            cmbCourse.setEnabled(on);
+            cmbBranch.setEnabled(on);
+            cmbSection.setEnabled(on);
+            txtCgpa.setEditable(on);
+            txtYear.setEditable(on);
+        }
+
+        private JPanel sectionBar(String text) {
+            JPanel bar = new JPanel(new BorderLayout());
+            bar.setBackground(ACCENT);
+            bar.setBorder(new EmptyBorder(4, 8, 4, 8));
+            bar.add(headerLabel(text), BorderLayout.WEST);
+            bar.setAlignmentX(Component.LEFT_ALIGNMENT);
+            return bar;
+        }
+
+        private JPanel wrapCard(JComponent child) {
+            JPanel wrap = new JPanel(new BorderLayout());
+            wrap.setBackground(MAIN_BG);
+            wrap.setBorder(new EmptyBorder(8, 8, 8, 8));
+            wrap.add(child, BorderLayout.CENTER);
+            wrap.setAlignmentX(Component.LEFT_ALIGNMENT);
+            return wrap;
+        }
+
+        private void addFormRows(JPanel p, Object... items) {
+            GridBagConstraints gc = new GridBagConstraints();
+            gc.insets = new Insets(6, 8, 6, 8);
+            gc.fill = GridBagConstraints.HORIZONTAL;
+
+            int r = 0;
+            for (int i = 0; i < items.length; i += 2) {
+                String label = (String) items[i];
+                JComponent field = (JComponent) items[i + 1];
+
+                gc.gridy = r;
+                gc.gridx = 0;
+                gc.weightx = 0.2;
+                JLabel l = new JLabel(label);
+                p.add(l, gc);
+
+                gc.gridx = 1;
+                gc.weightx = 0.8;
+
+                field.setPreferredSize(new Dimension(10, 28));
+                field.setBorder(BorderFactory.createLineBorder(BORDER));
+                if (field instanceof JComboBox) ((JComboBox<?>) field).setBackground(Color.WHITE);
+
+                p.add(field, gc);
+                r++;
+            }
+        }
+    }
+
+    // ==================== APPLICATIONS (screenshot style) ====================
+    static class StudentApplicationsPanel extends JPanel {
+        private final DefaultTableModel model = new DefaultTableModel(
+                new Object[]{"Company", "Role", "Applied On", "Status"}, 0
+        ) { public boolean isCellEditable(int r, int c) { return false; } };
+
+        private final JTable table = new JTable(model);
+        private final JLabel lblCount = new JLabel("0 application(s) total.");
+
+        private String studentId;
+
+        StudentApplicationsPanel() {
+            setLayout(new BorderLayout());
+            setBackground(MAIN_BG);
+
+            JPanel page = new JPanel();
+            page.setLayout(new BoxLayout(page, BoxLayout.Y_AXIS));
+            page.setBackground(MAIN_BG);
+
+            page.add(sectionBar("My Applications"));
+
+            JPanel card = new JPanel(new BorderLayout());
+            card.setBackground(CARD_BG);
+            card.setBorder(BorderFactory.createLineBorder(BORDER));
+
+            table.setRowHeight(26);
+            table.getTableHeader().setReorderingAllowed(false);
+
+            JScrollPane sp = new JScrollPane(table);
+            sp.setBorder(null);
+
+            card.add(sp, BorderLayout.CENTER);
+
+            lblCount.setBorder(new EmptyBorder(6, 8, 6, 8));
+            card.add(lblCount, BorderLayout.SOUTH);
+
+            JPanel wrap = new JPanel(new BorderLayout());
+            wrap.setBackground(MAIN_BG);
+            wrap.setBorder(new EmptyBorder(8, 8, 8, 8));
+            wrap.add(card, BorderLayout.CENTER);
+
+            page.add(wrap);
+
+            add(page, BorderLayout.NORTH);
+        }
+
+        void loadApplicationsForStudent(String id) {
+            this.studentId = id;
+            refresh();
+        }
+
+        private void refresh() {
+            model.setRowCount(0);
+            if (studentId == null) return;
+
+            List<ApplicationView> rows = MockApplicationService.getApplicationsForStudent(studentId);
+            for (ApplicationView a : rows) {
+                model.addRow(new Object[]{
+                        a.companyName,
+                        a.offerTitle,
+                        a.appliedDate.toString(),
+                        pretty(a.status)
+                });
+            }
+            lblCount.setText(rows.size() + " application(s) total.");
+        }
+
+        private String pretty(ApplicationStatus s) {
+            String t = s.name().toLowerCase();
+            return Character.toUpperCase(t.charAt(0)) + t.substring(1);
+        }
+
+        private JPanel sectionBar(String text) {
+            JPanel bar = new JPanel(new BorderLayout());
+            bar.setBackground(ACCENT);
+            bar.setBorder(new EmptyBorder(4, 8, 4, 8));
+            bar.add(headerLabel(text), BorderLayout.WEST);
+            bar.setAlignmentX(Component.LEFT_ALIGNMENT);
+            return bar;
+        }
+    }
+
+    // ==================== POLICY (screenshot style) ====================
+    static class StudentPolicyPanel extends JPanel {
+        StudentPolicyPanel() {
+            setLayout(new BorderLayout());
+            setBackground(MAIN_BG);
+
+            JPanel page = new JPanel();
+            page.setBackground(MAIN_BG);
+            page.setLayout(new BoxLayout(page, BoxLayout.Y_AXIS));
+
+            page.add(sectionBar("Placement Policy"));
+
+            page.add(wrap(block("General Rules",
+                    "Students must register with their academic details to be eligible for placements.\n" +
+                            "A student can hold only ONE approved offer at any time.\n" +
+                            "Students must meet eligibility criteria (CGPA, course, branch) set by the recruiting company.\n" +
+                            "Once an application is submitted, it cannot be withdrawn.\n" +
+                            "Students must keep their profile information up to date."
+            )));
+
+            page.add(wrap(block("Application Statuses",
+                    "Applied - Your application has been submitted and is awaiting review.\n" +
+                            "Shortlisted - You have been shortlisted by the company for further rounds.\n" +
+                            "Approved - Your application has been accepted. You are now placed.\n" +
+                            "Rejected - Your application was not selected for this offer."
+            )));
+
+            page.add(wrap(block("Code of Conduct",
+                    "Students must attend all scheduled placement activities and interviews.\n" +
+                            "Providing false information is grounds for disqualification.\n" +
+                            "Once placed, students should not apply to any more companies through the placement system.\n" +
+                            "Any grievances should be directed to the Placement Department admin."
+            )));
+
+            page.add(wrap(block("Contact",
+                    "For queries, contact the Placement Office:\n" +
+                            "Email: admin@placement.edu\n" +
+                            "Office: Room 101, Admin Block"
+            )));
+
+            JScrollPane sc = new JScrollPane(page);
+            sc.setBorder(null);
+            sc.getViewport().setBackground(MAIN_BG);
+            add(sc, BorderLayout.CENTER);
+        }
+
+        private JPanel sectionBar(String text) {
+            JPanel bar = new JPanel(new BorderLayout());
+            bar.setBackground(ACCENT);
+            bar.setBorder(new EmptyBorder(4, 8, 4, 8));
+            bar.add(headerLabel(text), BorderLayout.WEST);
+            bar.setAlignmentX(Component.LEFT_ALIGNMENT);
+            return bar;
+        }
+
+        private JPanel block(String title, String text) {
+            JPanel p = titledBlock(title);
+            p.setLayout(new BorderLayout());
+            JTextArea ta = new JTextArea(text);
+            ta.setEditable(false);
+            ta.setLineWrap(true);
+            ta.setWrapStyleWord(true);
+            ta.setBackground(CARD_BG);
+            ta.setBorder(new EmptyBorder(8, 10, 8, 10));
+            p.add(ta, BorderLayout.CENTER);
+            return p;
+        }
+
+        private JPanel wrap(JComponent c) {
+            JPanel w = new JPanel(new BorderLayout());
+            w.setBackground(MAIN_BG);
+            w.setBorder(new EmptyBorder(8, 8, 8, 8));
+            w.add(c, BorderLayout.CENTER);
+            w.setAlignmentX(Component.LEFT_ALIGNMENT);
+            return w;
         }
     }
 
@@ -874,14 +1351,12 @@ public class StudentFrontendTrial {
         CompanyShellPanel(MainFrame frame) {
             this.frame = frame;
             setLayout(new BorderLayout());
-            setBackground(new Color(245, 247, 250));
+            setBackground(MAIN_BG);
 
             lbl.setFont(new Font("SansSerif", Font.BOLD, 18));
             lbl.setBorder(new EmptyBorder(24, 24, 24, 24));
 
-            JButton logout = new JButton("Logout");
-            logout.setFocusPainted(false);
-            logout.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+            JButton logout = greyButton("Logout");
             logout.addActionListener(e -> frame.showLogin());
 
             JPanel top = new JPanel(new BorderLayout());
@@ -897,7 +1372,7 @@ public class StudentFrontendTrial {
             top.add(right, BorderLayout.EAST);
             add(top, BorderLayout.NORTH);
 
-            JLabel msg = new JLabel("<html>This is a placeholder screen.<br/>You only implemented Login + Registration for now.</html>");
+            JLabel msg = new JLabel("<html>This is a placeholder screen.<br/>You only implemented Login + Registration + Student UI.</html>");
             msg.setBorder(new EmptyBorder(60, 24, 24, 24));
             add(msg, BorderLayout.CENTER);
         }
@@ -915,14 +1390,12 @@ public class StudentFrontendTrial {
         AdminShellPanel(MainFrame frame) {
             this.frame = frame;
             setLayout(new BorderLayout());
-            setBackground(new Color(245, 247, 250));
+            setBackground(MAIN_BG);
 
             lbl.setFont(new Font("SansSerif", Font.BOLD, 18));
             lbl.setBorder(new EmptyBorder(24, 24, 24, 24));
 
-            JButton logout = new JButton("Logout");
-            logout.setFocusPainted(false);
-            logout.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+            JButton logout = greyButton("Logout");
             logout.addActionListener(e -> frame.showLogin());
 
             JPanel top = new JPanel(new BorderLayout());
@@ -948,253 +1421,41 @@ public class StudentFrontendTrial {
         }
     }
 
-    // ==================== PROFILE PANEL ====================
-    static class StudentProfilePanel extends JPanel {
-        private Student workingCopy;
-
-        private final JTextField txtName = new JTextField();
-        private final JTextField txtEmail = new JTextField();
-        private final JTextField txtCourse = new JTextField();
-        private final JTextField txtBranch = new JTextField();
-        private final JTextField txtSection = new JTextField();
-        private final JTextField txtGpa = new JTextField();
-
-        private final JButton btnEdit = new JButton("Edit");
-        private final JButton btnSave = new JButton("Save");
-        private final JLabel lblMsg = new JLabel(" ");
-
-        StudentProfilePanel() {
-            setLayout(new BorderLayout());
-            setBackground(new Color(245, 247, 250));
-
-            JPanel card = new JPanel();
-            card.setBackground(Color.WHITE);
-            card.setBorder(new EmptyBorder(18, 18, 18, 18));
-            card.setLayout(new BorderLayout(0, 14));
-
-            JLabel title = new JLabel("Student Profile");
-            title.setFont(new Font("SansSerif", Font.BOLD, 18));
-            card.add(title, BorderLayout.NORTH);
-
-            JPanel form = new JPanel(new GridBagLayout());
-            form.setBackground(Color.WHITE);
-
-            GridBagConstraints gc = new GridBagConstraints();
-            gc.insets = new Insets(6, 6, 6, 6);
-            gc.fill = GridBagConstraints.HORIZONTAL;
-            gc.weightx = 1;
-
-            int r = 0;
-            addRow(form, gc, r++, "Full Name", txtName);
-            addRow(form, gc, r++, "Email", txtEmail);
-            addRow(form, gc, r++, "Course", txtCourse);
-            addRow(form, gc, r++, "Branch", txtBranch);
-            addRow(form, gc, r++, "Section", txtSection);
-            addRow(form, gc, r++, "GPA/CGPA", txtGpa);
-
-            styleField(txtName); styleField(txtEmail); styleField(txtCourse);
-            styleField(txtBranch); styleField(txtSection); styleField(txtGpa);
-
-            card.add(form, BorderLayout.CENTER);
-
-            JPanel bottom = new JPanel(new BorderLayout());
-            bottom.setBackground(Color.WHITE);
-
-            JPanel actions = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 0));
-            actions.setBackground(Color.WHITE);
-
-            btnEdit.setFocusPainted(false);
-            btnSave.setFocusPainted(false);
-            btnEdit.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-            btnSave.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-
-            btnEdit.addActionListener(e -> setEditing(true));
-            btnSave.addActionListener(e -> save());
-
-            actions.add(btnEdit);
-            actions.add(btnSave);
-
-            lblMsg.setForeground(new Color(40, 140, 60));
-            lblMsg.setBorder(new EmptyBorder(6, 0, 0, 0));
-
-            bottom.add(actions, BorderLayout.WEST);
-            bottom.add(lblMsg, BorderLayout.SOUTH);
-
-            card.add(bottom, BorderLayout.SOUTH);
-
-            JPanel wrap = new JPanel(new GridBagLayout());
-            wrap.setBackground(new Color(245, 247, 250));
-            wrap.add(card);
-
-            add(wrap, BorderLayout.CENTER);
-
-            setEditing(false);
-        }
-
-        void loadStudent(Student s) {
-            workingCopy = new Student(s);
-            txtName.setText(workingCopy.fullName);
-            txtEmail.setText(workingCopy.email);
-            txtCourse.setText(workingCopy.course);
-            txtBranch.setText(workingCopy.branch);
-            txtSection.setText(workingCopy.section);
-            txtGpa.setText(String.valueOf(workingCopy.gpa));
-            lblMsg.setText(" ");
-            setEditing(false);
-        }
-
-        private void save() {
-            if (workingCopy == null) return;
-
-            String name = txtName.getText().trim();
-            String email = txtEmail.getText().trim();
-            String course = txtCourse.getText().trim();
-
-            if (name.isEmpty() || email.isEmpty() || course.isEmpty()) {
-                lblMsg.setForeground(new Color(190, 40, 40));
-                lblMsg.setText("Please fill in at least Name, Email and Course.");
-                return;
-            }
-
-            double gpa;
-            try {
-                gpa = Double.parseDouble(txtGpa.getText().trim());
-            } catch (Exception ex) {
-                lblMsg.setForeground(new Color(190, 40, 40));
-                lblMsg.setText("GPA must be a number (e.g. 3.45).");
-                return;
-            }
-
-            workingCopy.fullName = name;
-            workingCopy.email = email;
-            workingCopy.course = course;
-            workingCopy.branch = txtBranch.getText().trim();
-            workingCopy.section = txtSection.getText().trim();
-            workingCopy.gpa = gpa;
-
-            MockStudentService.updateStudent(workingCopy);
-
-            lblMsg.setForeground(new Color(40, 140, 60));
-            lblMsg.setText("Profile saved (mock).");
-            setEditing(false);
-        }
-
-        private void setEditing(boolean editing) {
-            txtName.setEnabled(editing);
-            txtEmail.setEnabled(editing);
-            txtCourse.setEnabled(editing);
-            txtBranch.setEnabled(editing);
-            txtSection.setEnabled(editing);
-            txtGpa.setEnabled(editing);
-
-            btnSave.setEnabled(editing);
-            btnEdit.setEnabled(!editing);
-
-            if (!editing) lblMsg.setText(" ");
-        }
-
-        private void addRow(JPanel panel, GridBagConstraints gc, int row, String label, JComponent field) {
-            gc.gridx = 0;
-            gc.gridy = row;
-            gc.weightx = 0.25;
-            JLabel l = new JLabel(label);
-            l.setFont(new Font("SansSerif", Font.PLAIN, 12));
-            l.setForeground(new Color(70, 70, 70));
-            panel.add(l, gc);
-
-            gc.gridx = 1;
-            gc.weightx = 0.75;
-            panel.add(field, gc);
-        }
-
-        private void styleField(JTextField f) {
-            f.setPreferredSize(new Dimension(260, 32));
-            f.setBorder(BorderFactory.createCompoundBorder(
-                    BorderFactory.createLineBorder(new Color(220, 225, 232)),
-                    new EmptyBorder(6, 8, 6, 8)
-            ));
-        }
+    // ==================== THEME HELPERS ====================
+    static JButton navButton(String text) {
+        JButton b = new JButton(text);
+        b.setFocusPainted(false);
+        b.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        b.setBackground(MAIN_BG);
+        b.setBorder(BorderFactory.createEmptyBorder(6, 10, 6, 10));
+        return b;
     }
 
-    // ==================== APPLICATIONS PANEL ====================
-    static class StudentApplicationsPanel extends JPanel {
-        private final JComboBox<String> cmbFilter = new JComboBox<>(
-                new String[]{"All", "APPLIED", "SHORTLISTED", "ACCEPTED", "REJECTED"}
-        );
+    static JButton greyButton(String text) {
+        JButton b = new JButton(text);
+        b.setFocusPainted(false);
+        b.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        b.setBackground(BTN);
+        b.setForeground(Color.WHITE);
+        b.setBorder(BorderFactory.createEmptyBorder(7, 14, 7, 14));
+        return b;
+    }
 
-        private final DefaultTableModel model = new DefaultTableModel(
-                new Object[]{"Company", "Offer", "Applied Date", "Status"}, 0
-        ) {
-            public boolean isCellEditable(int row, int col) { return false; }
-        };
+    static JPanel titledBlock(String title) {
+        JPanel p = new JPanel();
+        p.setBackground(CARD_BG);
+        p.setBorder(BorderFactory.createTitledBorder(
+                BorderFactory.createLineBorder(BORDER),
+                title
+        ));
+        return p;
+    }
 
-        private final JTable table = new JTable(model);
-        private String currentStudentId;
-
-        StudentApplicationsPanel() {
-            setLayout(new BorderLayout());
-            setBackground(new Color(245, 247, 250));
-
-            JPanel card = new JPanel(new BorderLayout(0, 12));
-            card.setBackground(Color.WHITE);
-            card.setBorder(new EmptyBorder(18, 18, 18, 18));
-
-            JLabel title = new JLabel("My Applications");
-            title.setFont(new Font("SansSerif", Font.BOLD, 18));
-            card.add(title, BorderLayout.NORTH);
-
-            JPanel topControls = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 0));
-            topControls.setBackground(Color.WHITE);
-
-            JLabel l = new JLabel("Filter by status:");
-            l.setFont(new Font("SansSerif", Font.PLAIN, 12));
-
-            cmbFilter.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-            cmbFilter.addActionListener(e -> refreshTable());
-
-            topControls.add(l);
-            topControls.add(cmbFilter);
-
-            card.add(topControls, BorderLayout.WEST);
-
-            table.setRowHeight(26);
-            table.getTableHeader().setReorderingAllowed(false);
-
-            JScrollPane sp = new JScrollPane(table);
-            sp.setBorder(BorderFactory.createLineBorder(new Color(230, 235, 242)));
-
-            card.add(sp, BorderLayout.CENTER);
-
-            JPanel wrap = new JPanel(new GridBagLayout());
-            wrap.setBackground(new Color(245, 247, 250));
-            wrap.add(card);
-
-            add(wrap, BorderLayout.CENTER);
-        }
-
-        void loadApplicationsForStudent(String studentId) {
-            this.currentStudentId = studentId;
-            cmbFilter.setSelectedIndex(0);
-            refreshTable();
-        }
-
-        private void refreshTable() {
-            model.setRowCount(0);
-            if (currentStudentId == null) return;
-
-            String filter = (String) cmbFilter.getSelectedItem();
-            List<ApplicationView> rows = MockApplicationService.getApplicationsForStudent(currentStudentId);
-
-            for (ApplicationView av : rows) {
-                if (!"All".equals(filter) && !av.status.name().equals(filter)) continue;
-                model.addRow(new Object[]{
-                        av.companyName,
-                        av.offerTitle,
-                        av.appliedDate.toString(),
-                        av.status.name()
-                });
-            }
-        }
+    static JLabel headerLabel(String text) {
+        JLabel l = new JLabel(text);
+        l.setForeground(Color.WHITE);
+        l.setFont(new Font("SansSerif", Font.BOLD, 13));
+        return l;
     }
 
     // ==================== MOCK DATA + SERVICES ====================
@@ -1274,7 +1535,8 @@ public class StudentFrontendTrial {
         LocalDate appliedDate;
         ApplicationStatus status;
 
-        ApplicationRecord(String studentId, String companyName, String offerTitle, LocalDate appliedDate, ApplicationStatus status) {
+        ApplicationRecord(String studentId, String companyName, String offerTitle,
+                          LocalDate appliedDate, ApplicationStatus status) {
             this.studentId = studentId;
             this.companyName = companyName;
             this.offerTitle = offerTitle;
@@ -1291,11 +1553,21 @@ public class StudentFrontendTrial {
 
         static {
             students.add(new Student("S001", "Tony Student", "tony@uom.mu", "1234",
-                    "BSc (Hons) Computer Science", "Software Eng", "2", 3.45));
+                    "BSc (Hons) Computer Science", "Computer Science", "2", 3.45));
 
-            companies.add(new Company("C001", "TechNova Ltd", "hr@technova.mu", "1234"));
+            // extra student to demo
+            students.add(new Student("S002", "Alice Johnson", "alice@university.edu", "1234",
+                    "B.Tech", "Computer Science", "4", 8.5));
+
+            companies.add(new Company("C001", "TechCorp Solutions", "hr@techcorp.com", "1234"));
+            companies.add(new Company("C002", "DataWorks Analytics", "hr@dataworks.com", "1234"));
 
             admins.add(new Admin("admin", "1234"));
+
+            applications.add(new ApplicationRecord("S002", "TechCorp Solutions", "Software Engineer",
+                    LocalDate.of(2026, 2, 5), ApplicationStatus.SHORTLISTED));
+            applications.add(new ApplicationRecord("S002", "DataWorks Analytics", "Data Analyst",
+                    LocalDate.of(2026, 2, 12), ApplicationStatus.APPLIED));
 
             applications.add(new ApplicationRecord("S001", "TechNova Ltd", "Software Intern",
                     LocalDate.now().minusDays(8), ApplicationStatus.APPLIED));
