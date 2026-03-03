@@ -7,6 +7,13 @@ import java.awt.*;
 import java.util.ArrayList;
 
 public class RegistrationPanel extends JPanel {
+    // Color scheme matching the dashboard
+    private static final Color MAIN_BG = new Color(0xCF, 0xCF, 0xCF);      // #CFCFCF
+    private static final Color ACCENT = new Color(0x54, 0x54, 0x54);       // #545454
+    private static final Color BTN = new Color(0x7D, 0x7D, 0x7D);          // #7D7D7D
+    private static final Color CARD_BG = new Color(0xE6, 0xE3, 0xD6);      // beige-grey
+    private static final Color BORDER = new Color(0x9A, 0x9A, 0x9A);       // #9A9A9A
+    
     private JRadioButton rbStudent = new JRadioButton("STUDENT");
     private JRadioButton rbCompany = new JRadioButton("COMPANY");
     private ButtonGroup roleGroup = new ButtonGroup();
@@ -19,6 +26,7 @@ public class RegistrationPanel extends JPanel {
     private JPanel regRoot = new JPanel(regCards);
     
     // Student fields
+    private JTextField txtStudentId = new JTextField();
     private JTextField txtFirst = new JTextField();
     private JTextField txtLast = new JTextField();
     private JTextField txtEmail = new JTextField();
@@ -45,53 +53,60 @@ public class RegistrationPanel extends JPanel {
         this.registrationListener = listener;
         
         setLayout(new BorderLayout());
-        setBackground(new Color(245, 247, 250));
+        setBackground(MAIN_BG);
         
-        JPanel page = new JPanel(new BorderLayout());
-        page.setOpaque(false);
-        page.setBorder(new EmptyBorder(26, 26, 26, 26));
-        
-        // Header
+        // Top header bar matching dashboard style
         JPanel header = new JPanel(new BorderLayout());
-        header.setBackground(Color.WHITE);
-        header.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createLineBorder(new Color(230, 235, 242)),
-                new EmptyBorder(18, 18, 18, 18)
-        ));
+        header.setBackground(ACCENT);
+        header.setBorder(new EmptyBorder(8, 16, 8, 16));
         
-        JPanel headerLeft = new JPanel();
-        headerLeft.setBackground(Color.WHITE);
-        headerLeft.setLayout(new BoxLayout(headerLeft, BoxLayout.Y_AXIS));
-        headerLeft.add(title);
-        headerLeft.add(Box.createVerticalStrut(6));
-        headerLeft.add(sub);
+        JLabel titleLabel = new JLabel("Student Placement System");
+        titleLabel.setFont(new Font("SansSerif", Font.BOLD, 16));
+        titleLabel.setForeground(Color.WHITE);
         
-        JButton btnBack = new JButton("Back to Login");
-        btnBack.setFocusPainted(false);
-        btnBack.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-        btnBack.addActionListener(e -> {
+        // subtitle removed per user request
+        
+        JPanel leftHeader = new JPanel(new BorderLayout());
+        leftHeader.setBackground(ACCENT);
+        leftHeader.add(titleLabel, BorderLayout.WEST);
+        
+        JButton btnBackToLogin = new JButton("Back to Login");
+        btnBackToLogin.setFocusPainted(false);
+        btnBackToLogin.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        btnBackToLogin.setBackground(BTN);
+        btnBackToLogin.setForeground(Color.WHITE);
+        btnBackToLogin.setFont(new Font("SansSerif", Font.PLAIN, 11));
+        btnBackToLogin.setBorder(BorderFactory.createEmptyBorder(6, 12, 6, 12));
+        btnBackToLogin.addActionListener(e -> {
             if (registrationListener != null) {
                 registrationListener.onBackToLogin();
             }
         });
         
-        header.add(headerLeft, BorderLayout.WEST);
-        header.add(btnBack, BorderLayout.EAST);
+        JPanel rightHeader = new JPanel(new FlowLayout(FlowLayout.RIGHT, 0, 0));
+        rightHeader.setBackground(ACCENT);
+        rightHeader.add(btnBackToLogin);
         
-        // Body
-        JPanel body = new JPanel(new BorderLayout());
-        body.setOpaque(false);
+        header.add(leftHeader, BorderLayout.WEST);
+        header.add(rightHeader, BorderLayout.EAST);
         
-        JPanel card = new JPanel(new BorderLayout(0, 12));
-        card.setBackground(Color.WHITE);
-        card.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createLineBorder(new Color(230, 235, 242)),
-                new EmptyBorder(18, 18, 18, 18)
+        // Center content area
+        JPanel centerContent = new JPanel(new GridBagLayout());
+        centerContent.setBackground(MAIN_BG);
+        centerContent.setBorder(new EmptyBorder(20, 20, 20, 20));
+        
+        JPanel formCard = new JPanel(new BorderLayout(0, 12));
+        formCard.setBackground(CARD_BG);
+        formCard.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(BORDER),
+                new EmptyBorder(20, 20, 20, 20)
         ));
+        // enlarge card space per request
+        formCard.setMaximumSize(new Dimension(700, 600));
         
         // Role row
         JPanel roleRow = new JPanel(new FlowLayout(FlowLayout.LEFT, 12, 0));
-        roleRow.setBackground(Color.WHITE);
+        roleRow.setBackground(CARD_BG);
         
         setupRoleRadio(rbStudent);
         setupRoleRadio(rbCompany);
@@ -102,14 +117,14 @@ public class RegistrationPanel extends JPanel {
         rbStudent.addActionListener(e -> switchRole());
         rbCompany.addActionListener(e -> switchRole());
         
-        roleRow.add(label("Role:"));
+        roleRow.add(label("Select Role:"));
         roleRow.add(rbStudent);
         roleRow.add(rbCompany);
         
-        card.add(roleRow, BorderLayout.NORTH);
+        formCard.add(roleRow, BorderLayout.NORTH);
         
         // Forms
-        regRoot.setBackground(Color.WHITE);
+        regRoot.setBackground(CARD_BG);
         regRoot.add(buildStudentForm(), "STUDENT");
         regRoot.add(buildCompanyForm(), "COMPANY");
         
@@ -117,38 +132,59 @@ public class RegistrationPanel extends JPanel {
                 JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED,
                 JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
         sc.setBorder(null);
+        sc.getViewport().setBackground(CARD_BG);
         
-        card.add(sc, BorderLayout.CENTER);
+        formCard.add(sc, BorderLayout.CENTER);
         
         // Bottom actions
         JPanel bottom = new JPanel(new BorderLayout());
-        bottom.setBackground(Color.WHITE);
+        bottom.setBackground(CARD_BG);
         
         lblError.setForeground(new Color(190, 40, 40));
         lblError.setFont(new Font("SansSerif", Font.PLAIN, 12));
         lblError.setBorder(new EmptyBorder(6, 0, 0, 0));
         
+        // make button identical to dashboard grey style and rename for clarity
         JButton btnRegister = new JButton("Register");
         btnRegister.setFocusPainted(false);
         btnRegister.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-        btnRegister.setBorder(BorderFactory.createEmptyBorder(9, 16, 9, 16));
+        // match login panel's primary style
+        btnRegister.setBackground(ACCENT);
+        btnRegister.setForeground(Color.WHITE);
+        btnRegister.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(ACCENT),
+                BorderFactory.createEmptyBorder(7, 14, 7, 14)
+        ));
         btnRegister.addActionListener(e -> doRegistration());
         
         JPanel actions = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
-        actions.setBackground(Color.WHITE);
+        actions.setBackground(CARD_BG);
         actions.add(btnRegister);
         
         bottom.add(lblError, BorderLayout.NORTH);
         bottom.add(actions, BorderLayout.WEST);
         
-        card.add(bottom, BorderLayout.SOUTH);
+        formCard.add(bottom, BorderLayout.SOUTH);
         
-        body.add(card, BorderLayout.CENTER);
+        GridBagConstraints gc = new GridBagConstraints();
+        gc.gridx = 0; gc.gridy = 0;
+        gc.weightx = 0.6; gc.weighty = 1;
+        gc.fill = GridBagConstraints.BOTH;
+        centerContent.add(formCard, gc);
         
-        page.add(header, BorderLayout.NORTH);
-        page.add(body, BorderLayout.CENTER);
+        // Footer
+        JPanel footer = new JPanel(new BorderLayout());
+        footer.setBackground(MAIN_BG);
+        footer.setBorder(BorderFactory.createMatteBorder(1, 0, 0, 0, BORDER));
+        JLabel footerLabel = new JLabel("Student Placement System © 2025 - All Rights Reserved");
+        footerLabel.setFont(new Font("SansSerif", Font.PLAIN, 10));
+        footerLabel.setForeground(new Color(100, 100, 100));
+        footerLabel.setBorder(new EmptyBorder(8, 16, 8, 16));
+        footer.add(footerLabel, BorderLayout.WEST);
         
-        add(page, BorderLayout.CENTER);
+        add(header, BorderLayout.NORTH);
+        add(centerContent, BorderLayout.CENTER);
+        add(footer, BorderLayout.SOUTH);
         
         switchRole();
     }
@@ -156,6 +192,7 @@ public class RegistrationPanel extends JPanel {
     public void reset() {
         rbStudent.setSelected(true);
         
+        txtStudentId.setText("");
         txtFirst.setText("");
         txtLast.setText("");
         txtEmail.setText("");
@@ -187,7 +224,7 @@ public class RegistrationPanel extends JPanel {
     
     private JPanel buildStudentForm() {
         JPanel p = new JPanel(new GridBagLayout());
-        p.setBackground(Color.WHITE);
+        p.setBackground(CARD_BG);
         
         GridBagConstraints gc = new GridBagConstraints();
         gc.insets = new Insets(8, 8, 8, 8);
@@ -195,6 +232,7 @@ public class RegistrationPanel extends JPanel {
         gc.weightx = 1;
         
         int r = 0;
+        addField(p, gc, r++, "Student ID", txtStudentId);
         addField(p, gc, r++, "First Name", txtFirst);
         addField(p, gc, r++, "Last Name", txtLast);
         addField(p, gc, r++, "Email", txtEmail);
@@ -215,7 +253,7 @@ public class RegistrationPanel extends JPanel {
     
     private JPanel buildCompanyForm() {
         JPanel p = new JPanel(new GridBagLayout());
-        p.setBackground(Color.WHITE);
+        p.setBackground(CARD_BG);
         
         GridBagConstraints gc = new GridBagConstraints();
         gc.insets = new Insets(8, 8, 8, 8);
@@ -259,6 +297,7 @@ public class RegistrationPanel extends JPanel {
     }
     
     private void doStudentRegistration() {
+        String studentId = txtStudentId.getText().trim();
         String first = txtFirst.getText().trim();
         String last = txtLast.getText().trim();
         String email = txtEmail.getText().trim();
@@ -268,7 +307,7 @@ public class RegistrationPanel extends JPanel {
         String course = txtCourse.getText().trim();
         String yearStr = txtYear.getText().trim();
         
-        if (first.isEmpty() || last.isEmpty() || email.isEmpty() || pass.isEmpty() || conf.isEmpty()
+        if (studentId.isEmpty() || first.isEmpty() || last.isEmpty() || email.isEmpty() || pass.isEmpty() || conf.isEmpty()
                 || faculty.isEmpty() || course.isEmpty() || yearStr.isEmpty()) {
             lblError.setText("All fields are required.");
             return;
@@ -322,7 +361,7 @@ public class RegistrationPanel extends JPanel {
     }
     
     private void setupRoleRadio(JRadioButton rb) {
-        rb.setBackground(Color.WHITE);
+        rb.setBackground(CARD_BG);
         rb.setFocusPainted(false);
         rb.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         rb.setFont(new Font("SansSerif", Font.PLAIN, 12));
@@ -339,7 +378,7 @@ public class RegistrationPanel extends JPanel {
         c.setFont(new Font("SansSerif", Font.PLAIN, 13));
         c.setPreferredSize(new Dimension(10, 36));
         c.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createLineBorder(new Color(220, 225, 232)),
+                BorderFactory.createLineBorder(BORDER),
                 new EmptyBorder(8, 10, 8, 10)
         ));
     }
