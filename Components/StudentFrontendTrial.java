@@ -124,50 +124,57 @@ public class StudentFrontendTrial {
             setLayout(new BorderLayout());
             setBackground(MAIN_BG);
 
-            JPanel page = new JPanel(new BorderLayout());
-            page.setOpaque(false);
-            page.setBorder(new EmptyBorder(26, 26, 26, 26));
-
+            // top header bar
             JPanel header = new JPanel(new BorderLayout());
-            header.setBackground(Color.WHITE);
-            header.setBorder(BorderFactory.createCompoundBorder(
-                    BorderFactory.createLineBorder(new Color(230, 235, 242)),
-                    new EmptyBorder(18, 18, 18, 18)
-            ));
+            header.setBackground(ACCENT);
+            header.setBorder(new EmptyBorder(8, 16, 8, 16));
 
-            JLabel brand = new JLabel("Student Placement System");
-            brand.setFont(new Font("SansSerif", Font.BOLD, 16));
+            JLabel titleLabel = new JLabel("Student Placement System");
+            titleLabel.setFont(new Font("SansSerif", Font.BOLD, 16));
+            titleLabel.setForeground(Color.WHITE);
 
-            JLabel hint = new JLabel("Frontend-only demo (mock data)");
-            hint.setForeground(new Color(120, 120, 120));
-            hint.setFont(new Font("SansSerif", Font.PLAIN, 12));
+            JLabel subtitleLabel = new JLabel("Frontend-only demo (mock data)");
+            subtitleLabel.setFont(new Font("SansSerif", Font.PLAIN, 12));
+            subtitleLabel.setForeground(Color.WHITE);
 
-            header.add(brand, BorderLayout.WEST);
-            header.add(hint, BorderLayout.EAST);
+            header.add(titleLabel, BorderLayout.WEST);
+            header.add(subtitleLabel, BorderLayout.EAST);
 
-            JPanel body = new JPanel(new GridBagLayout());
-            body.setOpaque(false);
+            // central content
+            JPanel centerContent = new JPanel(new GridBagLayout());
+            centerContent.setBackground(MAIN_BG);
+            centerContent.setBorder(new EmptyBorder(30, 30, 30, 30));
 
             JPanel formCard = buildLoginFormCard();
             formCard.setBorder(BorderFactory.createCompoundBorder(
-                    BorderFactory.createLineBorder(new Color(230, 235, 242)),
-                    new EmptyBorder(22, 22, 22, 22)
+                    BorderFactory.createLineBorder(BORDER),
+                    new EmptyBorder(30, 40, 30, 40)
             ));
-            formCard.setBackground(Color.WHITE);
-            formCard.setMinimumSize(new Dimension(520, 420));
+            formCard.setBackground(CARD_BG);
+            // make the login box a bit larger for visibility
+            formCard.setMaximumSize(new Dimension(650, 550));
 
             GridBagConstraints gc = new GridBagConstraints();
             gc.gridx = 0;
             gc.gridy = 0;
-            gc.weightx = 1;
+            gc.weightx = 0.5;
             gc.weighty = 1;
             gc.fill = GridBagConstraints.BOTH;
-            body.add(formCard, gc);
+            centerContent.add(formCard, gc);
 
-            page.add(header, BorderLayout.NORTH);
-            page.add(body, BorderLayout.CENTER);
+            // footer
+            JPanel footer = new JPanel(new BorderLayout());
+            footer.setBackground(MAIN_BG);
+            footer.setBorder(BorderFactory.createMatteBorder(1, 0, 0, 0, BORDER));
+            JLabel footerLabel = new JLabel("Student Placement System © 2025");
+            footerLabel.setFont(new Font("SansSerif", Font.PLAIN, 10));
+            footerLabel.setForeground(new Color(100, 100, 100));
+            footerLabel.setBorder(new EmptyBorder(8, 16, 8, 16));
+            footer.add(footerLabel, BorderLayout.WEST);
 
-            add(page, BorderLayout.CENTER);
+            add(header, BorderLayout.NORTH);
+            add(centerContent, BorderLayout.CENTER);
+            add(footer, BorderLayout.SOUTH);
 
             updateLoginTitleByRole();
         }
@@ -239,14 +246,13 @@ public class StudentFrontendTrial {
 
             gc.gridy++;
             JPanel actions = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 0));
-            actions.setBackground(Color.WHITE);
+            actions.setBackground(CARD_BG);
 
-            JButton btnLogin = new JButton("Login");
-            stylePrimary(btnLogin);
+            // use the grey dashboard‑style buttons for better contrast
+            JButton btnLogin = greyButton("Login");
             btnLogin.addActionListener(e -> doLogin());
 
-            JButton btnRegister = new JButton("Register");
-            styleSecondary(btnRegister);
+            JButton btnRegister = greyButton("Register");
             btnRegister.addActionListener(e -> frame.showRegister());
 
             actions.add(btnLogin);
@@ -355,6 +361,7 @@ public class StudentFrontendTrial {
         private final JPanel regRoot = new JPanel(regCards);
 
         // Student fields
+        private final JTextField txtStudentId = new JTextField();
         private final JTextField txtFirst = new JTextField();
         private final JTextField txtLast = new JTextField();
         private final JTextField txtEmail = new JTextField();
@@ -376,48 +383,45 @@ public class StudentFrontendTrial {
             setLayout(new BorderLayout());
             setBackground(MAIN_BG);
 
-            JPanel page = new JPanel(new BorderLayout());
-            page.setOpaque(false);
-            page.setBorder(new EmptyBorder(26, 26, 26, 26));
-
+            // header bar
             JPanel header = new JPanel(new BorderLayout());
-            header.setBackground(Color.WHITE);
-            header.setBorder(BorderFactory.createCompoundBorder(
-                    BorderFactory.createLineBorder(new Color(230, 235, 242)),
-                    new EmptyBorder(18, 18, 18, 18)
-            ));
+            header.setBackground(ACCENT);
+            header.setBorder(new EmptyBorder(8, 16, 8, 16));
 
-            title.setFont(new Font("SansSerif", Font.BOLD, 26));
-            sub.setFont(new Font("SansSerif", Font.PLAIN, 12));
-            sub.setForeground(new Color(90, 90, 90));
+            JLabel titleLabel = new JLabel("Student Placement System");
+            titleLabel.setFont(new Font("SansSerif", Font.BOLD, 16));
+            titleLabel.setForeground(Color.WHITE);
 
-            JPanel headerLeft = new JPanel();
-            headerLeft.setBackground(Color.WHITE);
-            headerLeft.setLayout(new BoxLayout(headerLeft, BoxLayout.Y_AXIS));
-            headerLeft.add(title);
-            headerLeft.add(Box.createVerticalStrut(6));
-            headerLeft.add(sub);
-
-            JButton btnBack = new JButton("Back to Login");
-            btnBack.setFocusPainted(false);
-            btnBack.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+            // subtitle label removed per request
+            // back button should use the accent-filled style to match other actions
+            JButton btnBack = greyButton("Back to Login");
+            btnBack.setFont(new Font("SansSerif", Font.PLAIN, 11));
             btnBack.addActionListener(e -> frame.showLogin());
 
-            header.add(headerLeft, BorderLayout.WEST);
-            header.add(btnBack, BorderLayout.EAST);
+            JPanel rightHeader = new JPanel(new FlowLayout(FlowLayout.RIGHT, 0, 0));
+            rightHeader.setBackground(ACCENT);
+            // only back button remains in header
+            rightHeader.add(btnBack);
 
-            JPanel body = new JPanel(new BorderLayout());
-            body.setOpaque(false);
+            header.add(titleLabel, BorderLayout.WEST);
+            header.add(rightHeader, BorderLayout.EAST);
+
+            // content area
+            JPanel centerContent = new JPanel(new GridBagLayout());
+            centerContent.setBackground(MAIN_BG);
+            centerContent.setBorder(new EmptyBorder(20, 20, 20, 20));
 
             JPanel card = new JPanel(new BorderLayout(0, 12));
-            card.setBackground(Color.WHITE);
+            card.setBackground(CARD_BG);
             card.setBorder(BorderFactory.createCompoundBorder(
-                    BorderFactory.createLineBorder(new Color(230, 235, 242)),
-                    new EmptyBorder(18, 18, 18, 18)
+                    BorderFactory.createLineBorder(BORDER),
+                    new EmptyBorder(20, 20, 20, 20)
             ));
+            // enlarge registration form card for more breathing room
+            card.setMaximumSize(new Dimension(700, 600));
 
             JPanel roleRow = new JPanel(new FlowLayout(FlowLayout.LEFT, 12, 0));
-            roleRow.setBackground(Color.WHITE);
+            roleRow.setBackground(CARD_BG);
 
             setupRoleRadio(rbStudent);
             setupRoleRadio(rbCompany);
@@ -434,7 +438,7 @@ public class StudentFrontendTrial {
 
             card.add(roleRow, BorderLayout.NORTH);
 
-            regRoot.setBackground(Color.WHITE);
+            regRoot.setBackground(CARD_BG);
             regRoot.add(buildStudentForm(), "STUDENT");
             regRoot.add(buildCompanyForm(), "COMPANY");
 
@@ -442,24 +446,23 @@ public class StudentFrontendTrial {
                     JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED,
                     JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
             sc.setBorder(null);
+            sc.getViewport().setBackground(CARD_BG);
 
             card.add(sc, BorderLayout.CENTER);
 
             JPanel bottom = new JPanel(new BorderLayout());
-            bottom.setBackground(Color.WHITE);
+            bottom.setBackground(CARD_BG);
 
             lblError.setForeground(new Color(190, 40, 40));
             lblError.setFont(new Font("SansSerif", Font.PLAIN, 12));
             lblError.setBorder(new EmptyBorder(6, 0, 0, 0));
 
-            JButton btnRegister = new JButton("Register");
-            btnRegister.setFocusPainted(false);
-            btnRegister.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-            btnRegister.setBorder(BorderFactory.createEmptyBorder(9, 16, 9, 16));
+            // use dashboard grey button style for visibility (already applied)
+            JButton btnRegister = greyButton("Register");
             btnRegister.addActionListener(e -> doRegistration());
 
             JPanel actions = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
-            actions.setBackground(Color.WHITE);
+            actions.setBackground(CARD_BG);
             actions.add(btnRegister);
 
             bottom.add(lblError, BorderLayout.NORTH);
@@ -467,12 +470,25 @@ public class StudentFrontendTrial {
 
             card.add(bottom, BorderLayout.SOUTH);
 
-            body.add(card, BorderLayout.CENTER);
+            GridBagConstraints gc = new GridBagConstraints();
+            gc.gridx = 0; gc.gridy = 0;
+            // allocate more horizontal space so the beige card can stretch
+            gc.weightx = 0.6; gc.weighty = 1;
+            gc.fill = GridBagConstraints.BOTH;
+            centerContent.add(card, gc);
 
-            page.add(header, BorderLayout.NORTH);
-            page.add(body, BorderLayout.CENTER);
+            JPanel footer = new JPanel(new BorderLayout());
+            footer.setBackground(MAIN_BG);
+            footer.setBorder(BorderFactory.createMatteBorder(1, 0, 0, 0, BORDER));
+            JLabel footerLabel = new JLabel("Student Placement System © 2025");
+            footerLabel.setFont(new Font("SansSerif", Font.PLAIN, 10));
+            footerLabel.setForeground(new Color(100, 100, 100));
+            footerLabel.setBorder(new EmptyBorder(8, 16, 8, 16));
+            footer.add(footerLabel, BorderLayout.WEST);
 
-            add(page, BorderLayout.CENTER);
+            add(header, BorderLayout.NORTH);
+            add(centerContent, BorderLayout.CENTER);
+            add(footer, BorderLayout.SOUTH);
 
             switchRole();
         }
@@ -480,6 +496,7 @@ public class StudentFrontendTrial {
         void reset() {
             rbStudent.setSelected(true);
 
+            txtStudentId.setText("");
             txtFirst.setText("");
             txtLast.setText("");
             txtEmail.setText("");
@@ -511,7 +528,8 @@ public class StudentFrontendTrial {
 
         private JPanel buildStudentForm() {
             JPanel p = new JPanel(new GridBagLayout());
-            p.setBackground(Color.WHITE);
+            // remove stark white background; use card colour instead
+            p.setBackground(CARD_BG);
 
             GridBagConstraints gc = new GridBagConstraints();
             gc.insets = new Insets(8, 8, 8, 8);
@@ -519,6 +537,7 @@ public class StudentFrontendTrial {
             gc.weightx = 1;
 
             int r = 0;
+            addField(p, gc, r++, "Student ID", txtStudentId);
             addField(p, gc, r++, "First Name", txtFirst);
             addField(p, gc, r++, "Last Name", txtLast);
             addField(p, gc, r++, "Email", txtEmail);
@@ -538,7 +557,7 @@ public class StudentFrontendTrial {
 
         private JPanel buildCompanyForm() {
             JPanel p = new JPanel(new GridBagLayout());
-            p.setBackground(Color.WHITE);
+            p.setBackground(CARD_BG);
 
             GridBagConstraints gc = new GridBagConstraints();
             gc.insets = new Insets(8, 8, 8, 8);
@@ -579,6 +598,7 @@ public class StudentFrontendTrial {
         }
 
         private void doStudentRegistration() {
+            String studentId = txtStudentId.getText().trim();
             String first = txtFirst.getText().trim();
             String last = txtLast.getText().trim();
             String email = txtEmail.getText().trim();
@@ -588,7 +608,7 @@ public class StudentFrontendTrial {
             String course = txtCourse.getText().trim();
             String yearStr = txtYear.getText().trim();
 
-            if (first.isEmpty() || last.isEmpty() || email.isEmpty() || pass.isEmpty() || conf.isEmpty()
+            if (studentId.isEmpty() || first.isEmpty() || last.isEmpty() || email.isEmpty() || pass.isEmpty() || conf.isEmpty()
                     || faculty.isEmpty() || course.isEmpty() || yearStr.isEmpty()) {
                 lblError.setText("All fields are required.");
                 return;
@@ -605,12 +625,12 @@ public class StudentFrontendTrial {
             String fullName = first + " " + last;
 
             for (Student s : MockDB.students) {
+                if (s.id.equals(studentId)) { lblError.setText("Student ID already in use."); return; }
                 if (s.fullName.equalsIgnoreCase(fullName)) { lblError.setText("A student with that name already exists."); return; }
                 if (s.email.equalsIgnoreCase(email)) { lblError.setText("Email already in use."); return; }
             }
 
-            String newId = "S" + String.format("%03d", MockDB.students.size() + 1);
-            Student newStudent = new Student(newId, fullName, email, pass,
+            Student newStudent = new Student(studentId, fullName, email, pass,
                     course, faculty, String.valueOf(year), 0.0);
 
             MockDB.students.add(newStudent);
@@ -1435,9 +1455,13 @@ public class StudentFrontendTrial {
         JButton b = new JButton(text);
         b.setFocusPainted(false);
         b.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-        b.setBackground(BTN);
+        b.setBackground(ACCENT);
         b.setForeground(Color.WHITE);
-        b.setBorder(BorderFactory.createEmptyBorder(7, 14, 7, 14));
+        // use accent border to match screenshot
+        b.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(ACCENT),
+                BorderFactory.createEmptyBorder(7, 14, 7, 14)
+        ));
         return b;
     }
 
