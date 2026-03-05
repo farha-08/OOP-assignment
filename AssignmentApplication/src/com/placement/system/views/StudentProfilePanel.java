@@ -29,74 +29,10 @@ public class StudentProfilePanel extends JPanel {
     private final JTextField txtEmail = new JTextField();
     private final JTextField txtUsername = new JTextField();
     private final JTextField txtPhone = new JTextField();
+    private final JTextField txtCourse = new JTextField();
+    private final JTextField txtBranch = new JTextField();
     
-    // Academic Details Fields
-    private final JComboBox<String> cmbCourse = new JComboBox<>(new String[]{
-    	    "BSc (Hons) Computer Science",
-    	    "BSc (Hons) Software Engineering",
-    	    "BSc (Hons) Information Technology",
-    	    "BSc (Hons) Business Informatics",
-    	    "BSc (Hons) Data Science",
-    	    "BSc (Hons) Cybersecurity",
-    	    "BSc (Hons) Mathematics",
-    	    "BSc (Hons) Physics",
-    	    "BSc (Hons) Chemistry",
-    	    "BSc (Hons) Biology",
-    	    "BSc (Hons) Marine Science",
-    	    "BEng (Hons) Chemical Engineering",
-    	    "BEng (Hons) Civil Engineering",
-    	    "BEng (Hons) Electrical & Electronic Engineering",
-    	    "BEng (Hons) Mechanical Engineering",
-    	    "BEng (Hons) Mechatronics",
-    	    "LLB (Hons) Law",
-    	    "BSc (Hons) Accounting",
-    	    "BSc (Hons) Finance",
-    	    "BSc (Hons) Management",
-    	    "BSc (Hons) Human Resource Management",
-    	    "BSc (Hons) Marketing",
-    	    "BSc (Hons) Economics",
-    	    "BA (Hons) English Studies",
-    	    "BA (Hons) French Studies",
-    	    "BA (Hons) History & Political Science",
-    	    "BA (Hons) Sociology",
-    	    "BA (Hons) Social Work",
-    	    "MBBS Medicine",
-    	    "BSc (Hons) Nursing",
-    	    "BSc (Hons) Agriculture",
-    	    "BSc (Hons) Food Science",
-    	    "Other"
-    	});
-
-    	private final JComboBox<String> cmbBranch = new JComboBox<>(new String[]{
-    	    "Faculty of Engineering",
-    	    "Faculty of Information, Communication & Digital Technologies (FoICDT)",
-    	    "Faculty of Science",
-    	    "Faculty of Law & Management",
-    	    "Faculty of Social Studies & Humanities",
-    	    "Faculty of Agriculture",
-    	    "Faculty of Medicine & Health Sciences",
-    	    "Faculty of Ocean Studies",
-    	    "School of Business",
-    	    "Department of Computer Science & Engineering",
-    	    "Department of Software Engineering",
-    	    "Department of Electrical & Electronic Engineering",
-    	    "Department of Civil Engineering",
-    	    "Department of Mechanical Engineering",
-    	    "Department of Finance & Accounting",
-    	    "Department of Management",
-    	    "Department of Law",
-    	    "Department of Economics & Statistics",
-    	    "Department of English Studies",
-    	    "Department of French Studies",
-    	    "Department of Mathematics",
-    	    "Department of Physics",
-    	    "Department of Chemistry",
-    	    "Department of Biosciences",
-    	    "Department of Health Sciences",
-    	    "Centre for Information Technology & Systems (CITS)",
-    	    "Other"
-    	});
-    private final JComboBox<String> cmbSection = new JComboBox<>(new String[]{"A1", "B2", "C3", "D4"});
+    
     private final JTextField txtCgpa = new JTextField();
     private final JTextField txtYear = new JTextField();
     
@@ -145,11 +81,10 @@ public class StudentProfilePanel extends JPanel {
         
         JPanel academicCard = createTitledBlock("Academic Information");
         academicCard.setLayout(new GridBagLayout());
-        addFormRow(academicCard, "Course:", cmbCourse, 0);
-        addFormRow(academicCard, "Branch:", cmbBranch, 1);
-        addFormRow(academicCard, "Section:", cmbSection, 2);
-        addFormRow(academicCard, "CGPA:", txtCgpa, 3);
-        addFormRow(academicCard, "Year of Study:", txtYear, 4);
+        addFormRow(academicCard, "Course:", txtCourse, 0);
+        addFormRow(academicCard, "Branch:", txtBranch, 1);
+        addFormRow(academicCard, "CGPA:", txtCgpa, 2);
+        addFormRow(academicCard, "Year of Study:", txtYear, 3);
         page.add(wrapInPadding(academicCard));
         page.add(Box.createVerticalStrut(10));
         
@@ -310,10 +245,6 @@ public class StudentProfilePanel extends JPanel {
                 BorderFactory.createLineBorder(BORDER),
                 new EmptyBorder(4, 6, 4, 6)
             ));
-        } else if (field instanceof JComboBox) {
-            ((JComboBox<?>) field).setBackground(Color.WHITE);
-            ((JComboBox<?>) field).setBorder(BorderFactory.createLineBorder(BORDER));
-            ((JComboBox<?>) field).setMaximumSize(new Dimension(300, 28));
         } else if (field instanceof JPasswordField) {
             ((JPasswordField) field).setBorder(BorderFactory.createCompoundBorder(
                 BorderFactory.createLineBorder(BORDER),
@@ -374,9 +305,8 @@ public class StudentProfilePanel extends JPanel {
         txtPhone.setText(student.getPhone() != null ? student.getPhone() : "");
         
         // Academic Details
-        cmbCourse.setSelectedItem(student.getCourse());
-        cmbBranch.setSelectedItem(student.getBranch());
-        cmbSection.setSelectedItem(student.getSection());
+        txtCourse.setText(student.getCourse());
+        txtBranch.setText(student.getBranch());
         txtCgpa.setText(String.valueOf(student.getCgpa()));
         txtYear.setText(student.getYear());
         
@@ -398,36 +328,15 @@ public class StudentProfilePanel extends JPanel {
     
     private void saveChanges() {
         // Validate inputs
-        if (txtFullName.getText().trim().isEmpty()) {
-            showError("Full name cannot be empty");
-            return;
-        }
         
         if (txtEmail.getText().trim().isEmpty()) {
             showError("Email cannot be empty");
             return;
         }
-        
-        double cgpa;
-        try {
-            cgpa = Double.parseDouble(txtCgpa.getText().trim());
-            if (cgpa < 0 || cgpa > 10) {
-                showError("CGPA must be between 0 and 10");
-                return;
-            }
-        } catch (NumberFormatException ex) {
-            showError("CGPA must be a valid number");
-            return;
-        }
+       
         
         // Update student object
-        workingCopy.setFullName(txtFullName.getText().trim());
         workingCopy.setEmail(txtEmail.getText().trim());
-        workingCopy.setCourse((String) cmbCourse.getSelectedItem());
-        workingCopy.setBranch((String) cmbBranch.getSelectedItem());
-        workingCopy.setSection((String) cmbSection.getSelectedItem());
-        workingCopy.setCgpa(cgpa);
-        workingCopy.setYear(txtYear.getText().trim());
         workingCopy.setPhone(txtPhone.getText().trim());
         
         // Here you would save to database
@@ -501,15 +410,14 @@ public class StudentProfilePanel extends JPanel {
         editing = enabled;
         
         // Enable/disable fields
-        txtFullName.setEditable(enabled);
+        txtFullName.setEditable(false);
         txtEmail.setEditable(enabled);
         txtPhone.setEditable(enabled);
         
-        cmbCourse.setEnabled(enabled);
-        cmbBranch.setEnabled(enabled);
-        cmbSection.setEnabled(enabled);
-        txtCgpa.setEditable(enabled);
-        txtYear.setEditable(enabled);
+        txtCourse.setEditable(false);
+        txtBranch.setEditable(false);
+        txtCgpa.setEditable(false);
+        txtYear.setEditable(false);
         
         // Username should never be editable
         txtUsername.setEditable(false);

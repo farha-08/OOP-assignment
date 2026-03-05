@@ -27,26 +27,26 @@ public class StudentDataStore {
 	 private void initializeMockData() {
 	     // Student(int id, String username, String password, String email, 
 	     //        String fullName, String studentId, String course, String branch, 
-	     //        String section, double cgpa, String year, String phone, String placementStatus)
+	     //        double cgpa, String year, String phone, String placementStatus)
 		 
 		 Student student1 = new Student(
 				 1, "tony", "1234", "tony@uom.mu", 
 	             "Tony", "S001", "Computer Science","FOICDT", 
-	             "B2", 4.0, "2", "555-0000", "Not Placed"
+	             4.0, "2", "555-0000", "Not Placed"
 	             );
 	         students.put(1, student1);
 	     
 	     Student student2 = new Student(
 		         2, "john_doe", "password", "john@uni.edu", 
 		         "John Doe", "S002", "Computer Science", "B.Tech", 
-		         "A1", 3.5, "3", "555-0101", "Not Placed"
+		         3.5, "3", "555-0101", "Not Placed"
 	     );
 	     students.put(2, student2);
 	     
 	     Student student3 = new Student(
 		         3, "jane_smith", "password", "jane@uni.edu", 
 		         "Jane Smith", "S003", "CInformation Systems", "B.Tech", 
-		         "B2", 4.2, "3", "555-0102", "Offered"
+		         4.2, "3", "555-0102", "Offered"
 	     );
 	     students.put(3, student3);
 	 }

@@ -7,7 +7,6 @@ public class Student extends User {
     private String studentId;      // Roll number / Registration number
     private String course;          // e.g., "B.Tech", "BSc"
     private String branch;          // e.g., "Computer Science", "IT"
-    private String section;         // e.g., "A", "B"
     private double cgpa;            // Current CGPA
     private String year;            // Year of study (e.g., "3", "Final Year")
     private String phone;           // Contact number
@@ -16,8 +15,8 @@ public class Student extends User {
     // Full constructor
     public Student(int id, String username, String password, String email, 
                    String fullName, String studentId, String course, 
-                   String branch, String section, double cgpa, 
-                   String year, String phone, String placementStatus) {
+                   String branch, double cgpa, String year, String phone, 
+                   String placementStatus) {
         
         // Call parent constructor
         super(id, username, password, email, "STUDENT", fullName);
@@ -26,7 +25,6 @@ public class Student extends User {
         this.studentId = studentId;
         this.course = course;
         this.branch = branch;
-        this.section = section;
         this.cgpa = cgpa;
         this.year = year;
         this.phone = phone;
@@ -39,14 +37,14 @@ public class Student extends User {
                    double cgpa, String year) {
         this(id, username, password, email, fullName, 
              "S" + String.format("%04d", id), // Generate student ID
-             course, branch, "A", cgpa, year, "", "Not Placed");
+             course, branch, cgpa, year, "", "Not Placed");
     }
     
     // Copy constructor (useful for editing)
     public Student(Student other) {
         this(other.getId(), other.getUsername(), other.getPassword(), 
              other.getEmail(), other.getFullName(), other.getStudentId(),
-             other.getCourse(), other.getBranch(), other.getSection(),
+             other.getCourse(), other.getBranch(),
              other.getCgpa(), other.getYear(), other.getPhone(),
              other.getPlacementStatus());
     }
@@ -75,14 +73,6 @@ public class Student extends User {
     
     public void setBranch(String branch) {
         this.branch = branch;
-    }
-    
-    public String getSection() {
-        return section;
-    }
-    
-    public void setSection(String section) {
-        this.section = section;
     }
     
     public double getCgpa() {
@@ -138,7 +128,7 @@ public class Student extends User {
      */
     public String getAcademicInfo() {
         return String.format("%s - %s (%s) | CGPA: %.2f | Year: %s", 
-            course, branch, section, cgpa, year);
+            course, branch, cgpa, year);
     }
     
     @Override
