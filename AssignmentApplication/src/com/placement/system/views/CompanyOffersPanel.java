@@ -21,6 +21,10 @@ public class CompanyOffersPanel extends JPanel {
     private static final Color MAIN_BG = new Color(0xCF, 0xCF, 0xCF);      // #CFCFCF
     private static final Color ACCENT_DARK = new Color(0x54, 0x54, 0x54);  // #545454
     private static final Color ACCENT_BUTTON = new Color(0x7D, 0x7D, 0x7D); // #7D7D7D
+
+    private static final Color STATUS_OPEN = new Color(0, 180, 80);
+    private static final Color STATUS_CLOSED = new Color(120, 120, 120); // grey
+    private static final DateTimeFormatter DEADLINE_FMT = DateTimeFormatter.ofPattern("dd/MM/yyyy");
     
     private CompanyDataStore store;
     private JPanel cardsGrid;
@@ -128,9 +132,11 @@ public class CompanyOffersPanel extends JPanel {
         JLabel title = new JLabel(offer.getTitle());
         title.setFont(title.getFont().deriveFont(Font.BOLD, 14f));
         
-        JLabel badge = new JLabel("Open");
+        boolean closed = isOfferClosed(offer);
+
+        JLabel badge = new JLabel(closed ? "Closed" : "Open");
         badge.setOpaque(true);
-        badge.setBackground(new Color(0, 180, 80));
+        badge.setBackground(closed ? STATUS_CLOSED : STATUS_OPEN);
         badge.setForeground(Color.WHITE);
         badge.setBorder(BorderFactory.createEmptyBorder(4, 10, 4, 10));
         
@@ -192,6 +198,15 @@ public class CompanyOffersPanel extends JPanel {
         c.setBorder(BorderFactory.createEmptyBorder(4, 10, 4, 10));
         return c;
     }
+    private boolean isOfferClosed(JobOffer offer) {
+    try {
+        LocalDate deadline = LocalDate.parse(offer.getDeadline().trim(), DEADLINE_FMT);
+        return LocalDate.now().isAfter(deadline); // after deadline => closed
+    } catch (Exception e) {
+        // If deadline format is wrong, keep it OPEN (safe default)
+        return false;
+    }
+}
     
     private void showDetails(JobOffer offer) {
         // Parent window (so dialog centers properly)
@@ -227,9 +242,11 @@ public class CompanyOffersPanel extends JPanel {
         JPanel right = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 0));
         right.setBackground(MAIN_BG);
         
-        JLabel badge = new JLabel("Open");
+        boolean closed = isOfferClosed(offer);
+
+        JLabel badge = new JLabel(closed ? "Closed" : "Open");
         badge.setOpaque(true);
-        badge.setBackground(new Color(0, 180, 80));
+        badge.setBackground(closed ? STATUS_CLOSED : STATUS_OPEN);
         badge.setForeground(Color.WHITE);
         badge.setBorder(BorderFactory.createEmptyBorder(5, 12, 5, 12));
         

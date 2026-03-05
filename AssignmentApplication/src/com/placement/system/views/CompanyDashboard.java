@@ -162,6 +162,7 @@ public class CompanyDashboard extends BaseDashboard {
     private void handleMenuClick(String menuItem) {
         contentLayout.show(contentPanel, menuItem);
         setStatusMessage("Viewing: " + menuItem);
+        setActiveButton(menuItem); // ✅ always sync highlight with page
     }
     
     /**
