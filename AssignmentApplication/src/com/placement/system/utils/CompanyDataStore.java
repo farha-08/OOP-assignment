@@ -35,10 +35,10 @@ public class CompanyDataStore {
         Company company1 = new Company(
             1, "tech_nova", "1234", "hr@technova.com",
             "TechNova Ltd", "C0001", "TechNova Ltd",
-            "Technology", "Jane Harper", "555-0201", 
-            "www.technova.com", 
+            "Jane Harper", "555-0201", 
+            "www.technova.com", "Ebène, Mauritius",
             "Leading technology company specializing in software development and IT services.",
-            "Ebène, Mauritius", true, 5
+             true, 5
         );
         companies.put(1, company1);
         companiesByEmail.put("hr@technova.com", company1);
@@ -47,10 +47,10 @@ public class CompanyDataStore {
         Company company2 = new Company(
             2, "mcb_ltd", "password", "careers@mcb.mu",
             "MCB Ltd", "C0002", "MCB Ltd",
-            "Banking", "John Smith", "555-0301",
-            "www.mcb.mu",
+            "John Smith", "555-0301",
+            "www.mcb.mu", "Port Louis, Mauritius",
             "Mauritius Commercial Bank - Leading financial institution.",
-            "Port Louis, Mauritius", true, 3
+            true, 3
         );
         companies.put(2, company2);
         companiesByEmail.put("careers@mcb.mu", company2);
@@ -60,10 +60,10 @@ public class CompanyDataStore {
         Company company3 = new Company(
             3, "startup_inc", "password", "hello@startup.mu",
             "Startup Inc", "C0003", "Startup Inc",
-            "Technology", "Alice Brown", "555-0401",
-            "www.startup.mu",
+            "Alice Brown", "555-0401",
+            "www.startup.mu", "Curepipe, Mauritius", 
             "A new startup looking for talent.",
-            "Curepipe, Mauritius", false, 0
+            false, 0
         );
         companies.put(3, company3);
         companiesByEmail.put("hello@startup.mu", company3);
@@ -103,16 +103,6 @@ public class CompanyDataStore {
         List<Company> result = new ArrayList<>();
         for (Company company : companies.values()) {
             if (company.isVerified()) {
-                result.add(company);
-            }
-        }
-        return result;
-    }
-    
-    public List<Company> getCompaniesByIndustry(String industry) {
-        List<Company> result = new ArrayList<>();
-        for (Company company : companies.values()) {
-            if (industry.equals(company.getIndustry())) {
                 result.add(company);
             }
         }
@@ -200,7 +190,6 @@ public class CompanyDataStore {
         
         for (Company company : companies.values()) {
             if (company.getCompanyName().toLowerCase().contains(term) ||
-                company.getIndustry().toLowerCase().contains(term) ||
                 company.getContactPerson().toLowerCase().contains(term)) {
                 result.add(company);
             }
@@ -230,12 +219,4 @@ public class CompanyDataStore {
         return count;
     }
     
-    public Map<String, Integer> getCompaniesByIndustryStats() {
-        Map<String, Integer> stats = new HashMap<>();
-        for (Company company : companies.values()) {
-            String industry = company.getIndustry();
-            stats.put(industry, stats.getOrDefault(industry, 0) + 1);
-        }
-        return stats;
-    }
 }

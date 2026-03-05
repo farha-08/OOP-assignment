@@ -4,7 +4,10 @@ package com.placement.system.views;
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import java.awt.*;
-import java.util.ArrayList;
+import com.placement.system.models.Company;
+import com.placement.system.utils.CompanyDataStore;
+import com.placement.system.models.Student;
+import com.placement.system.utils.StudentDataStore;
 
 public class RegistrationPanel extends JPanel {
     // Color scheme matching the dashboard
@@ -27,18 +30,24 @@ public class RegistrationPanel extends JPanel {
     
     // Student fields
     private JTextField txtStudentId = new JTextField();
-    private JTextField txtFirst = new JTextField();
-    private JTextField txtLast = new JTextField();
+    private JTextField txtFullName = new JTextField();
     private JTextField txtEmail = new JTextField();
+    private JTextField txtUsername = new JTextField();
     private JPasswordField txtPass = new JPasswordField();
     private JPasswordField txtConfirm = new JPasswordField();
     private JTextField txtFaculty = new JTextField();
     private JTextField txtCourse = new JTextField();
     private JTextField txtYear = new JTextField();
+    private JTextField txtPhone = new JTextField();
     
     // Company fields
     private JTextField txtCompanyName = new JTextField();
     private JTextField txtCompanyEmail = new JTextField();
+    private JTextField txtContactPerson = new JTextField();
+    private JTextField txtCompanyPhone = new JTextField();
+    private JTextField txtCompanyWebsite = new JTextField();
+    private JTextField txtCompanyAddress = new JTextField();
+    private JTextArea txtCompanyDescription = new JTextArea(3, 20);
     private JPasswordField txtCompanyPass = new JPasswordField();
     private JPasswordField txtCompanyConfirm = new JPasswordField();
     
@@ -193,17 +202,23 @@ public class RegistrationPanel extends JPanel {
         rbStudent.setSelected(true);
         
         txtStudentId.setText("");
-        txtFirst.setText("");
-        txtLast.setText("");
+        txtFullName.setText("");
         txtEmail.setText("");
+        txtUsername.setText("");
         txtPass.setText("");
         txtConfirm.setText("");
         txtFaculty.setText("");
         txtCourse.setText("");
         txtYear.setText("");
+        txtPhone.setText("");
         
         txtCompanyName.setText("");
         txtCompanyEmail.setText("");
+        txtContactPerson.setText("");
+        txtCompanyPhone.setText("");
+        txtCompanyWebsite.setText("");
+        txtCompanyAddress.setText("");
+        txtCompanyDescription.setText("");
         txtCompanyPass.setText("");
         txtCompanyConfirm.setText("");
         
@@ -232,15 +247,28 @@ public class RegistrationPanel extends JPanel {
         gc.weightx = 1;
         
         int r = 0;
-        addField(p, gc, r++, "Student ID", txtStudentId);
-        addField(p, gc, r++, "First Name", txtFirst);
-        addField(p, gc, r++, "Last Name", txtLast);
-        addField(p, gc, r++, "Email", txtEmail);
-        addField(p, gc, r++, "Password", txtPass);
-        addField(p, gc, r++, "Confirm Password", txtConfirm);
-        addField(p, gc, r++, "Faculty", txtFaculty);
-        addField(p, gc, r++, "Course", txtCourse);
-        addField(p, gc, r++, "Year of Study", txtYear);
+        
+        addField(p, gc, r++, "Student ID*", txtStudentId);
+        addField(p, gc, r++, "Full Name*", txtFullName);
+        addField(p, gc, r++, "Email*", txtEmail);
+        addField(p, gc, r++, "Username*", txtUsername);
+        addField(p, gc, r++, "Password*", txtPass);
+        addField(p, gc, r++, "Confirm Password*", txtConfirm);
+        addField(p, gc, r++, "Faculty*", txtFaculty);
+        addField(p, gc, r++, "Course*", txtCourse);
+        addField(p, gc, r++, "Year of Study*", txtYear);
+        addField(p, gc, r++, "Phone", txtPhone);
+        
+        // Note about required fields
+        gc.gridy = r;
+        gc.gridx = 0;
+        gc.gridwidth = 2;
+        gc.weightx = 1;
+        JLabel noteLabel = new JLabel("* Required fields");
+        noteLabel.setFont(new Font("SansSerif", Font.ITALIC, 11));
+        noteLabel.setForeground(new Color(100, 100, 100));
+        p.add(noteLabel, gc);
+        r++;
         
         // spacer
         gc.gridx = 0; gc.gridy = r; gc.gridwidth = 2;
@@ -252,7 +280,7 @@ public class RegistrationPanel extends JPanel {
     }
     
     private JPanel buildCompanyForm() {
-        JPanel p = new JPanel(new GridBagLayout());
+    	JPanel p = new JPanel(new GridBagLayout());
         p.setBackground(CARD_BG);
         
         GridBagConstraints gc = new GridBagConstraints();
@@ -261,11 +289,47 @@ public class RegistrationPanel extends JPanel {
         gc.weightx = 1;
         
         int r = 0;
-        addField(p, gc, r++, "Company Name", txtCompanyName);
-        addField(p, gc, r++, "Company Email", txtCompanyEmail);
-        addField(p, gc, r++, "Password", txtCompanyPass);
-        addField(p, gc, r++, "Confirm Password", txtCompanyConfirm);
         
+        // Basic Account Info
+        addField(p, gc, r++, "Company Name*", txtCompanyName);
+        addField(p, gc, r++, "Contact Person*", txtContactPerson);
+        addField(p, gc, r++, "Email*", txtCompanyEmail);
+        addField(p, gc, r++, "Password*", txtCompanyPass);
+        addField(p, gc, r++, "Confirm Password*", txtCompanyConfirm);
+        
+        // Contact Details
+        addField(p, gc, r++, "Phone Number", txtCompanyPhone);
+        addField(p, gc, r++, "Website", txtCompanyWebsite);
+        addField(p, gc, r++, "Address*", txtCompanyAddress);
+        
+        
+        // Description - using JTextArea with scroll
+        gc.gridy = r;
+        gc.gridx = 0;
+        gc.gridwidth = 1;
+        gc.weightx = 0.25;
+        p.add(label("Company Description"), gc);
+        
+        gc.gridx = 1;
+        gc.weightx = 0.75;
+        JScrollPane descScroll = new JScrollPane(txtCompanyDescription);
+        descScroll.setPreferredSize(new Dimension(250, 60));
+        descScroll.setBorder(BorderFactory.createLineBorder(BORDER));
+        p.add(descScroll, gc);
+        r++;
+        
+        // Note about required fields
+        gc.gridy = r;
+        gc.gridx = 0;
+        gc.gridwidth = 2;
+        gc.weightx = 1;
+        JLabel noteLabel = new JLabel("* Required fields");
+        noteLabel.setFont(new Font("SansSerif", Font.ITALIC, 11));
+        noteLabel.setForeground(new Color(100, 100, 100));
+        p.add(noteLabel, gc);
+        r++;
+        
+        // spacer
         gc.gridx = 0; gc.gridy = r; gc.gridwidth = 2;
         gc.weighty = 1;
         gc.fill = GridBagConstraints.BOTH;
@@ -297,38 +361,119 @@ public class RegistrationPanel extends JPanel {
     }
     
     private void doStudentRegistration() {
+        // Get values from form
         String studentId = txtStudentId.getText().trim();
-        String first = txtFirst.getText().trim();
-        String last = txtLast.getText().trim();
+        String fullName = txtFullName.getText().trim();
         String email = txtEmail.getText().trim();
+        String username = txtUsername.getText().trim();
         String pass = new String(txtPass.getPassword());
         String conf = new String(txtConfirm.getPassword());
         String faculty = txtFaculty.getText().trim();
         String course = txtCourse.getText().trim();
         String yearStr = txtYear.getText().trim();
+        String phoneStr = txtPhone.getText().trim();
         
-        if (studentId.isEmpty() || first.isEmpty() || last.isEmpty() || email.isEmpty() || pass.isEmpty() || conf.isEmpty()
+        // Validate required fields
+        if (studentId.isEmpty() || fullName.isEmpty() || email.isEmpty() || username.isEmpty() || pass.isEmpty() || conf.isEmpty()
                 || faculty.isEmpty() || course.isEmpty() || yearStr.isEmpty()) {
-            lblError.setText("All fields are required.");
+            lblError.setText("Please fill all required fields.");
             return;
         }
+        
         if (!pass.equals(conf)) {
             lblError.setText("Passwords do not match.");
             return;
         }
         
-        int year;
-        try {
-            year = Integer.parseInt(yearStr);
-        } catch (Exception ex) {
-            lblError.setText("Year must be a number.");
+        if (pass.length() < 6) {
+            lblError.setText("Password must be at least 6 characters long.");
             return;
         }
         
-        // Here you would save to database
+        // Basic email validation
+        if (!email.contains("@") || !email.contains(".")) {
+            lblError.setText("Please enter a valid email address.");
+            return;
+        }
+        
+        // Validate year is a number
+        int year;
+        try {
+            year = Integer.parseInt(yearStr);
+            if (year < 1 || year > 6) {
+                lblError.setText("Year must be between 1 and 6.");
+                return;
+            }
+        } catch (NumberFormatException ex) {
+                lblError.setText("Year must be a valid number.");
+                return;
+        }
+        
+        // Check if student already exists in repository
+        Student existingStudent = StudentDataStore.getInstance().getStudentByEmail(email);
+        if (existingStudent != null) {
+            lblError.setText("A student with this email already exists.");
+            return;
+        }
+        
+        // Check if student ID already exists
+        existingStudent = StudentDataStore.getInstance().getStudentByStudentID(studentId);
+        if (existingStudent != null) {
+            lblError.setText("A student with this ID already exists.");
+            return;
+        }
+        
+     // Check if student username already exists
+        existingStudent = StudentDataStore.getInstance().getStudentByUsername(username);
+        if (existingStudent != null) {
+            lblError.setText("A student with this username already exists.");
+            return;
+        }
+        
+        // Get next available ID from repository
+        int nextId = StudentDataStore.getInstance().getAllStudents().size() + 1;
+        
+        // Create new Student object
+        // Using constructor: Student(int id, String username, String password, String email,
+        //                    String fullName, String studentId, String course, String branch,
+        //                    String section, double cgpa, String year, String phone, String placementStatus)
+        
+        // Note: branch maps to faculty, section defaults to "A", cgpa starts at 0.0, phone empty
+        Student newStudent = new Student(
+            nextId,                          // id
+            username,                        // username
+            pass,                            // password
+            email,                           // email
+            fullName,                        // fullName
+            studentId,                       // studentId (from form)
+            course,                          // course
+            faculty,                         // branch (maps to faculty)
+            0.0,                             // cgpa (default 0.0 until updated)
+            String.valueOf(year),             // year
+            "",                              // phone (empty until updated)
+            "Not Placed"                      // placementStatus (default)
+        );
+        
+        // Save to repository
+        StudentDataStore.getInstance().addStudent(newStudent);
+        
+        // Show success message
+        String message = String.format(
+            "Student registration successful!\n\n" +
+            "Name: %s\n" +
+            "Student ID: %s\n" +
+            "Email: %s\n" +
+            "Course: %s\n" +
+            "Faculty: %s\n" +
+            "Year: %d\n\n" +
+            "You can now login with your credentials.",
+            fullName, studentId, email, course, faculty, year
+        );
+        
         JOptionPane.showMessageDialog(this,
-                "Student registration successful. You can now login.",
-                "Success", JOptionPane.INFORMATION_MESSAGE);
+            message,
+            "Registration Successful",
+            JOptionPane.INFORMATION_MESSAGE);
         
         if (registrationListener != null) {
             registrationListener.onRegistrationComplete();
@@ -336,24 +481,92 @@ public class RegistrationPanel extends JPanel {
     }
     
     private void doCompanyRegistration() {
+        // Get values
         String name = txtCompanyName.getText().trim();
+        String contactPerson = txtContactPerson.getText().trim();
         String email = txtCompanyEmail.getText().trim();
         String pass = new String(txtCompanyPass.getPassword());
         String conf = new String(txtCompanyConfirm.getPassword());
+        String phone = txtCompanyPhone.getText().trim();
+        String website = txtCompanyWebsite.getText().trim();
+        String address = txtCompanyAddress.getText().trim();
+        String description = txtCompanyDescription.getText().trim();
         
-        if (name.isEmpty() || email.isEmpty() || pass.isEmpty() || conf.isEmpty()) {
-            lblError.setText("All fields are required.");
+        // Validate required fields
+        if (name.isEmpty() || contactPerson.isEmpty() || email.isEmpty() || pass.isEmpty() || conf.isEmpty()) {
+            lblError.setText("Please fill all required fields.");
             return;
         }
+        
         if (!pass.equals(conf)) {
             lblError.setText("Passwords do not match.");
             return;
         }
         
-        // Here you would save to database
+        if (pass.length() < 6) {
+            lblError.setText("Password must be at least 6 characters long.");
+            return;
+        }
+        
+        // Basic email validation
+        if (!email.contains("@") || !email.contains(".")) {
+            lblError.setText("Please enter a valid email address.");
+            return;
+        }
+        
+        // Check if company already exists in repository
+        Company existingCompany = CompanyDataStore.getInstance().getCompanyByEmail(email);
+        if (existingCompany != null) {
+            lblError.setText("A company with this email already exists.");
+            return;
+        }
+        
+        // Generate a username from company name (lowercase, no spaces)
+        String username = name.toLowerCase().replaceAll("[^a-z0-9]", "_");
+        
+        // Create new Company object
+        // Using constructor: Company(id, username, password, email, fullName, companyId, companyName, 
+        //                        contactPerson, phone, website, address, companyDescription, isVerified, totalJobsPosted)
+        
+        // Get next available ID (you'd typically get this from your data store)
+        int nextId = CompanyDataStore.getInstance().getAllCompanies().size() + 1;
+        
+        Company newCompany = new Company(
+            nextId,                          // id
+            username,                        // username
+            pass,                            // password
+            email,                           // email
+            name,                            // fullName (inherited)
+            "C" + String.format("%04d", nextId), // companyId (e.g., C0005)
+            name,                            // companyName
+            contactPerson,                   // contactPerson
+            phone,                           // phone
+            website,                         // website
+            address,                         // address
+            description,                     // companyDescription
+            false,                           // isVerified (default false)
+            0                                 // totalJobsPosted
+        );
+        
+        // Save to repository
+        CompanyDataStore.getInstance().addCompany(newCompany);
+        
+        // Show success message
+        String message = String.format(
+            "Company registration successful!\n\n" +
+            "Company: %s\n" +
+            "Contact: %s\n" +
+            "Email: %s\n" +
+            "Phone: %s\n\n" +
+            "Your account is pending verification by an administrator.\n" +
+            "You will be able to login once verified.",
+            name, contactPerson, email, phone.isEmpty() ? "Not provided" : phone
+        );
+        
         JOptionPane.showMessageDialog(this,
-                "Company registration successful. You can now login.",
-                "Success", JOptionPane.INFORMATION_MESSAGE);
+            message,
+            "Registration Successful",
+            JOptionPane.INFORMATION_MESSAGE);
         
         if (registrationListener != null) {
             registrationListener.onRegistrationComplete();

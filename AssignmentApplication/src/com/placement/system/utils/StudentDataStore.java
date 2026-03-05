@@ -75,6 +75,15 @@ public class StudentDataStore {
 	     return null;
 	 }
 	 
+	 public Student getStudentByStudentID(String studentId) {
+	     for (Student student : students.values()) {
+	         if (student.getEmail().equals(studentId)) {
+	             return student;
+	         }
+	     }
+	     return null;
+	 }
+	 
 	 public List<Student> getAllStudents() {
 	     return new ArrayList<>(students.values());
 	 }
