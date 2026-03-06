@@ -320,7 +320,7 @@ public class CompanyDashboard extends BaseDashboard {
             
             // Combine stats and activity in a split view
             JSplitPane splitPane = new JSplitPane(JSplitPane.VERTICAL_SPLIT, statsSection, activityPanel);
-            splitPane.setDividerLocation(220);
+            splitPane.setDividerLocation(190);
             splitPane.setBorder(null);
             
             // Add everything to content container
@@ -385,35 +385,39 @@ public class CompanyDashboard extends BaseDashboard {
         private JPanel createStatusBadge(String title, String status) {
             JPanel card = new JPanel(new BorderLayout());
             card.setBackground(CARD_BG);
-            
+
             card.setBorder(BorderFactory.createCompoundBorder(
                 BorderFactory.createLineBorder(BORDER),
                 BorderFactory.createEmptyBorder(12, 15, 12, 15)
             ));
-            
+
             // Title
             JLabel titleLabel = new JLabel(title);
             titleLabel.setFont(new Font("SansSerif", Font.PLAIN, 12));
             titleLabel.setHorizontalAlignment(SwingConstants.CENTER);
-            
-            // Status badge panel
-            JPanel badgePanel = new JPanel();
-            badgePanel.setBackground(getStatusColor(status));
-            badgePanel.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createLineBorder(getStatusBorderColor(status), 1),
-                BorderFactory.createEmptyBorder(5, 10, 5, 10)
-            ));
-            
-            JLabel statusLabel = new JLabel(status);
-            statusLabel.setForeground(Color.WHITE);
-            statusLabel.setFont(new Font("SansSerif", Font.BOLD, 14));
+
+            // Status text only (no green bar)
+            JLabel statusLabel;
+            if ("Verified".equalsIgnoreCase(status)) {
+                statusLabel = new JLabel("✓ Verified");
+                statusLabel.setForeground(new Color(46, 204, 113));
+            } else if ("Pending".equalsIgnoreCase(status)) {
+                statusLabel = new JLabel("⏳ Pending");
+                statusLabel.setForeground(new Color(241, 176, 59));
+            } else if ("Suspended".equalsIgnoreCase(status)) {
+                statusLabel = new JLabel("✖ Suspended");
+                statusLabel.setForeground(new Color(178, 34, 34));
+            } else {
+                statusLabel = new JLabel(status);
+                statusLabel.setForeground(ACCENT);
+            }
+
+            statusLabel.setFont(new Font("SansSerif", Font.BOLD, 16));
             statusLabel.setHorizontalAlignment(SwingConstants.CENTER);
-            
-            badgePanel.add(statusLabel);
-            
+
             card.add(titleLabel, BorderLayout.NORTH);
-            card.add(badgePanel, BorderLayout.CENTER);
-            
+            card.add(statusLabel, BorderLayout.CENTER);
+
             return card;
         }
         

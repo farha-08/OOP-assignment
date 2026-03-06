@@ -6,6 +6,7 @@ import javax.swing.border.EmptyBorder;
 import java.awt.*;
 import java.util.ArrayList;
 import java.util.List;
+import com.placement.system.views.CompanyOffersPanel;
 
 public class CreateOfferPanel extends JPanel {
     
@@ -220,7 +221,22 @@ public class CreateOfferPanel extends JPanel {
             String deadline = jt_deadline.getText().trim();
             String desc = ta_desc.getText().trim();
             String qual = ta_qual.getText().trim();
-            
+            // ✅ Save the new offer into the same store used by "My Offers"
+            CompanyOffersPanel.CompanyDataStore.getInstance().addOffer(
+                new CompanyOffersPanel.JobOffer(
+                    title,
+                    dept.isEmpty() ? "-" : dept,
+                    loc.isEmpty() ? "-" : loc,
+                    type,
+                    salary.isEmpty() ? "-" : salary,
+                    positions,
+                    deadline.isEmpty() ? "-" : deadline,
+                    desc.isEmpty() ? "-" : desc,
+                    qual.isEmpty() ? "-" : qual,
+                    skillsList.isEmpty() ? new String[]{"-"} : skillsList.toArray(new String[0]),
+                    0 // applicants count
+                )
+            );
             // Here you would save to database using your data store
             // For now, just show success message
             StringBuilder message = new StringBuilder();
