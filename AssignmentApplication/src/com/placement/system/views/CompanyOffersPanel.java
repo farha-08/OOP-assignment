@@ -264,7 +264,7 @@ public class CompanyOffersPanel extends JPanel {
         root.add(header, BorderLayout.NORTH);
         
         // ================= TOP INFO ROW =================
-        JPanel info = new JPanel(new GridLayout(3, 2, 14, 8));
+        JPanel info = new JPanel(new GridLayout(4, 2, 14, 8));
         info.setBackground(Color.WHITE);
         info.setBorder(BorderFactory.createCompoundBorder(
             BorderFactory.createLineBorder(Color.LIGHT_GRAY),
@@ -276,7 +276,8 @@ public class CompanyOffersPanel extends JPanel {
         info.add(createInfoLabel(offer.getSalary()));
         info.add(createInfoLabel(offer.getPositions() + " position(s)"));
         info.add(createInfoLabel("Deadline: " + offer.getDeadline()));
-        
+        info.add(createInfoLabel("Minimum CGPA: " + offer.getCgpa()));
+
         String created = LocalDate.now().format(DateTimeFormatter.ofPattern("dd MMM yyyy"));
         info.add(createInfoLabel("Created: " + created));
         
@@ -474,7 +475,7 @@ public class CompanyOffersPanel extends JPanel {
             // Add some sample data
             offers.add(new JobOffer(
                 "Software Engineer", "Engineering", "Ebène", "Full-time",
-                "Rs 55,000/month", 2, "31/12/2024",
+                "Rs 55,000/month", 2, "31/12/2024","3.0",
                 "Develop and maintain software applications...",
                 "Bachelor's in Computer Science or related field",
                 new String[]{"Java", "Spring", "SQL", "Git"}, 3
@@ -506,14 +507,15 @@ public class CompanyOffersPanel extends JPanel {
         private String salary;
         private int positions;
         private String deadline;
+        private String cgpa;
         private String description;
         private String qualifications;
         private String[] skills;
         private int applicants;
         
         public JobOffer(String title, String department, String location, String type,
-                       String salary, int positions, String deadline, String description,
-                       String qualifications, String[] skills, int applicants) {
+                String salary, int positions, String deadline, String cgpa,
+                String description, String qualifications, String[] skills, int applicants) {
             this.title = title;
             this.department = department;
             this.location = location;
@@ -521,6 +523,7 @@ public class CompanyOffersPanel extends JPanel {
             this.salary = salary;
             this.positions = positions;
             this.deadline = deadline;
+            this.cgpa = cgpa;
             this.description = description;
             this.qualifications = qualifications;
             this.skills = skills;
@@ -535,6 +538,7 @@ public class CompanyOffersPanel extends JPanel {
         public String getSalary() { return salary; }
         public int getPositions() { return positions; }
         public String getDeadline() { return deadline; }
+        public String getCgpa() { return cgpa; }
         public String getDescription() { return description; }
         public String getQualifications() { return qualifications; }
         public String[] getSkills() { return skills; }

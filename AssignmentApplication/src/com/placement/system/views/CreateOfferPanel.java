@@ -25,10 +25,11 @@ public class CreateOfferPanel extends JPanel {
     private JTextField jt_salary = new JTextField(20);
     private JSpinner js_positions = new JSpinner(new SpinnerNumberModel(1, 1, 999, 1));
     private JTextField jt_deadline = new JTextField(20); // dd/mm/yyyy
-    
+    private JTextField jt_cgpa = new JTextField(20);
+
     // Text areas
-    private JTextArea ta_desc = new JTextArea(5, 30);
-    private JTextArea ta_qual = new JTextArea(4, 30);
+    private JTextArea ta_desc = new JTextArea(3, 30);
+    private JTextArea ta_qual = new JTextArea(3, 30);
     
     // Skills
     private JTextField jt_skill = new JTextField(20);
@@ -101,15 +102,15 @@ public class CreateOfferPanel extends JPanel {
         
         // Row 4
         formGrid.add(new JLabel("Application Deadline (dd/mm/yyyy)"));
-        formGrid.add(new JLabel("")); // empty
+        formGrid.add(new JLabel("Minimum CGPA"));
         formGrid.add(jt_deadline);
-        formGrid.add(new JLabel("")); // empty
+        formGrid.add(jt_cgpa);
         
         // ---------- DESCRIPTION PANEL ----------
         ta_desc.setLineWrap(true);
         ta_desc.setWrapStyleWord(true);
         JScrollPane descScroll = new JScrollPane(ta_desc);
-        descScroll.setPreferredSize(new Dimension(400, 100));
+        descScroll.setPreferredSize(new Dimension(400, 70));
         
         JPanel descPanel = new JPanel(new BorderLayout());
         descPanel.setBackground(Color.WHITE);
@@ -120,11 +121,11 @@ public class CreateOfferPanel extends JPanel {
         ta_qual.setLineWrap(true);
         ta_qual.setWrapStyleWord(true);
         JScrollPane qualScroll = new JScrollPane(ta_qual);
-        qualScroll.setPreferredSize(new Dimension(400, 80));
+        qualScroll.setPreferredSize(new Dimension(400, 70));
         
         JPanel qualPanel = new JPanel(new BorderLayout());
         qualPanel.setBackground(Color.WHITE);
-        qualPanel.add(new JLabel("Qualifications"), BorderLayout.NORTH);
+        qualPanel.add(new JLabel("Qualifications Needed"), BorderLayout.NORTH);
         qualPanel.add(qualScroll, BorderLayout.CENTER);
         
         // ---------- SKILLS PANEL ----------
@@ -146,19 +147,29 @@ public class CreateOfferPanel extends JPanel {
         skillsPanel.add(skillsDisplayPanel, BorderLayout.SOUTH);
         
         // ---------- BODY LAYOUT ----------
-        JPanel body = new JPanel(new BorderLayout(0, 12));
+        JPanel body = new JPanel();
         body.setBackground(Color.WHITE);
-        body.add(formGrid, BorderLayout.NORTH);
+        body.setLayout(new BoxLayout(body, BoxLayout.Y_AXIS));
+
+        formGrid.setAlignmentX(Component.LEFT_ALIGNMENT);
+        descPanel.setAlignmentX(Component.LEFT_ALIGNMENT);
+        qualPanel.setAlignmentX(Component.LEFT_ALIGNMENT);
+        skillsPanel.setAlignmentX(Component.LEFT_ALIGNMENT);
+
+        body.add(formGrid);
+        body.add(Box.createVerticalStrut(15));
+        body.add(descPanel);
+        body.add(Box.createVerticalStrut(15));
+        body.add(qualPanel);
+        body.add(Box.createVerticalStrut(15));
+        body.add(skillsPanel);
+
+        JScrollPane bodyScroll = new JScrollPane(body);
+        bodyScroll.setBorder(BorderFactory.createEmptyBorder());
+        bodyScroll.getVerticalScrollBar().setUnitIncrement(16);
+        bodyScroll.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
         
-        JPanel middle = new JPanel(new GridLayout(2, 1, 0, 12));
-        middle.setBackground(Color.WHITE);
-        middle.add(descPanel);
-        middle.add(qualPanel);
-        body.add(middle, BorderLayout.CENTER);
-        
-        body.add(skillsPanel, BorderLayout.SOUTH);
-        
-        card.add(body, BorderLayout.CENTER);
+        card.add(bodyScroll, BorderLayout.CENTER);
         
         // ---------- BOTTOM BUTTONS ----------
         JPanel bottomPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 0));
@@ -221,6 +232,7 @@ public class CreateOfferPanel extends JPanel {
             String deadline = jt_deadline.getText().trim();
             String desc = ta_desc.getText().trim();
             String qual = ta_qual.getText().trim();
+            String cgpa = jt_cgpa.getText().trim();
             // ✅ Save the new offer into the same store used by "My Offers"
             CompanyOffersPanel.CompanyDataStore.getInstance().addOffer(
                 new CompanyOffersPanel.JobOffer(
@@ -231,6 +243,7 @@ public class CreateOfferPanel extends JPanel {
                     salary.isEmpty() ? "-" : salary,
                     positions,
                     deadline.isEmpty() ? "-" : deadline,
+                    cgpa.isEmpty() ? "-" : cgpa,
                     desc.isEmpty() ? "-" : desc,
                     qual.isEmpty() ? "-" : qual,
                     skillsList.isEmpty() ? new String[]{"-"} : skillsList.toArray(new String[0]),
@@ -247,7 +260,8 @@ public class CreateOfferPanel extends JPanel {
             message.append("Type: ").append(type).append("\n");
             message.append("Salary: ").append(salary).append("\n");
             message.append("Positions: ").append(positions).append("\n");
-            message.append("Deadline: ").append(deadline).append("\n");
+            message.append("Deadline: ").append(deadline).append("\n");        
+            message.append("Minimum CGPA: ").append(cgpa).append("\n");
             message.append("Skills: ").append(String.join(", ", skillsList));
             
             JOptionPane.showMessageDialog(this, 
@@ -297,6 +311,7 @@ public class CreateOfferPanel extends JPanel {
         jt_salary.setText("");
         js_positions.setValue(1);
         jt_deadline.setText("");
+        jt_cgpa.setText("");
         ta_desc.setText("");
         ta_qual.setText("");
         jt_skill.setText("");
