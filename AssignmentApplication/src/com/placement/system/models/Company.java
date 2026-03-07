@@ -162,6 +162,6 @@ public class Company extends User {
     
     @Override
     public String toString() {
-        return String.format("Company[%s] %s - %s", companyId, companyName);
+        return String.format("Company[%s] %s", companyId, companyName);
     }
 }
