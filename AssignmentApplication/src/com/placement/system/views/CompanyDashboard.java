@@ -19,7 +19,7 @@ public class CompanyDashboard extends BaseDashboard {
     protected static final Color BTN_BG = new Color(0x7D, 0x7D, 0x7D);        // #7D7D7D
     protected static final Color BTN_ACTIVE_BG = new Color(0x56, 0x56, 0x56);
     protected static final Color BORDER = new Color(160, 160, 160);           // Light gray border
-    protected static final Color CARD_BG = new Color(0xE6, 0xE3, 0xD6);
+    protected static final Color CARD_BG = new Color(0xFF, 0xFF, 0xFF);
     
     private Company company;
     private Map<String, JButton> menuButtons = new HashMap<>();
