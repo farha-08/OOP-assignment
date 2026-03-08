@@ -11,7 +11,6 @@ import com.placement.system.models.Company;
 import com.placement.system.utils.SessionManager;
 import com.placement.system.utils.StudentDataStore;
 import com.placement.system.utils.CompanyDataStore;
-import com.placement.system.views.UIStyles;
 
 
 public class LoginPanel extends JPanel {
@@ -169,11 +168,13 @@ public class LoginPanel extends JPanel {
         JPanel actions = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 0));
         actions.setBackground(CARD_BG);
         
-        // menu‑style buttons matching the student dashboard
-        JButton btnLogin = UIStyles.createMenuButton("Login");
+        JButton btnLogin = new JButton("Login");
+        stylePrimary(btnLogin);
         btnLogin.addActionListener(e -> performLogin());
         
-        JButton btnRegister = UIStyles.createMenuButton("Register");
+        JButton btnRegister = new JButton("Register");
+        // make register button same prominent style as login
+        stylePrimary(btnRegister);
         btnRegister.addActionListener(e -> {
             if (loginListener != null) {
                 loginListener.onRegisterRequest();

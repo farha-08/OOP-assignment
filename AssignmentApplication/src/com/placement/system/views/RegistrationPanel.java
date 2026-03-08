@@ -8,7 +8,6 @@ import com.placement.system.models.Company;
 import com.placement.system.utils.CompanyDataStore;
 import com.placement.system.models.Student;
 import com.placement.system.utils.StudentDataStore;
-import com.placement.system.views.UIStyles;
 
 public class RegistrationPanel extends JPanel {
     // Color scheme matching the dashboard
@@ -80,8 +79,13 @@ public class RegistrationPanel extends JPanel {
         leftHeader.setBackground(ACCENT);
         leftHeader.add(titleLabel, BorderLayout.WEST);
         
-        // use same nav button as dashboard
-        JButton btnBackToLogin = UIStyles.createMenuButton("Back to Login");
+        JButton btnBackToLogin = new JButton("Back to Login");
+        btnBackToLogin.setFocusPainted(false);
+        btnBackToLogin.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        btnBackToLogin.setBackground(BTN);
+        btnBackToLogin.setForeground(Color.WHITE);
+        btnBackToLogin.setFont(new Font("SansSerif", Font.PLAIN, 11));
+        btnBackToLogin.setBorder(BorderFactory.createEmptyBorder(6, 12, 6, 12));
         btnBackToLogin.addActionListener(e -> {
             if (registrationListener != null) {
                 registrationListener.onBackToLogin();
@@ -149,8 +153,17 @@ public class RegistrationPanel extends JPanel {
         lblError.setFont(new Font("SansSerif", Font.PLAIN, 12));
         lblError.setBorder(new EmptyBorder(6, 0, 0, 0));
         
-        // action button styled like dashboard menu buttons
-        JButton btnRegister = UIStyles.createMenuButton("Register");
+        // make button identical to dashboard grey style and rename for clarity
+        JButton btnRegister = new JButton("Register");
+        btnRegister.setFocusPainted(false);
+        btnRegister.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        // match login panel's primary style
+        btnRegister.setBackground(ACCENT);
+        btnRegister.setForeground(Color.WHITE);
+        btnRegister.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(ACCENT),
+                BorderFactory.createEmptyBorder(7, 14, 7, 14)
+        ));
         btnRegister.addActionListener(e -> doRegistration());
         
         JPanel actions = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
