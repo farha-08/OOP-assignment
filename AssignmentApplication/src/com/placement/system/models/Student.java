@@ -11,7 +11,8 @@ public class Student extends User {
     private String year;            // Year of study (e.g., "3", "Final Year")
     private String phone;           // Contact number
     private String placementStatus; // "Not Placed", "Offered", "Placed", "Blocked"
-    
+    private String bio;
+    private String cvPath;
     // Full constructor
     public Student(int id, String username, String password, String email, 
                    String fullName, String studentId, String course, 
@@ -129,6 +130,22 @@ public class Student extends User {
     public String getAcademicInfo() {
         return String.format("%s - %s (%s) | CGPA: %.2f | Year: %s", 
             course, branch, cgpa, year);
+    }
+    
+    public String getBio() {
+        return bio;
+    }
+
+    public void setBio(String bio) {
+        this.bio = bio;
+    }
+
+    public String getCvPath() {
+        return cvPath;
+    }
+
+    public void setCvPath(String cvPath) {
+        this.cvPath = cvPath;
     }
     
     @Override

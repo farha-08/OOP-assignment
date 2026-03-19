@@ -34,7 +34,6 @@ public class JobBrowserPanel extends JPanel {
     private JTextField txtSearch = new JTextField();
     private JComboBox<String> cbType = new JComboBox<>();
     private JComboBox<String> cbLocation = new JComboBox<>();
-    private JComboBox<String> cbExperience = new JComboBox<>();
     private JComboBox<String> cbCompany = new JComboBox<>();
     private JComboBox<String> cbTime = new JComboBox<>();
     
@@ -83,6 +82,10 @@ public class JobBrowserPanel extends JPanel {
         center.setBackground(MAIN_BG);
         center.setBorder(BorderFactory.createLineBorder(ACCENT));
         
+        // Top wrapper for header + filters
+        JPanel topSection = new JPanel(new BorderLayout());
+        topSection.setBackground(MAIN_BG);
+        
         // Section header
         JPanel sectionHeader = new JPanel(new BorderLayout());
         sectionHeader.setBackground(ACCENT);
@@ -91,8 +94,10 @@ public class JobBrowserPanel extends JPanel {
         sec.setFont(new Font("SansSerif", Font.BOLD, 13));
         sectionHeader.add(sec, BorderLayout.CENTER);
         
-        center.add(sectionHeader, BorderLayout.NORTH);
-        center.add(buildFiltersPanel(), BorderLayout.NORTH);
+        topSection.add(sectionHeader, BorderLayout.NORTH);
+        topSection.add(buildFiltersPanel(), BorderLayout.CENTER);
+        
+        center.add(topSection, BorderLayout.NORTH);
         
         // Table setup
         String[] cols = {"Company", "Title", "Type", "Salary", "Location", "Deadline", "Eligible"};
@@ -171,7 +176,7 @@ public class JobBrowserPanel extends JPanel {
         gc.anchor = GridBagConstraints.WEST;
         gc.fill = GridBagConstraints.HORIZONTAL;
         
-        // Row 1
+        // Row 1: Search + Type
         gc.gridx = 0; gc.gridy = 0; gc.weightx = 0;
         row.add(label("Search:"), gc);
         
@@ -182,10 +187,10 @@ public class JobBrowserPanel extends JPanel {
         gc.gridx = 2; gc.gridy = 0; gc.weightx = 0;
         row.add(label("Type:"), gc);
         
-        gc.gridx = 3; gc.gridy = 0; gc.weightx = 0.4;
+        gc.gridx = 3; gc.gridy = 0; gc.weightx = 0.5;
         row.add(cbType, gc);
         
-        // Row 2
+        // Row 2: Location + Company
         gc.gridx = 0; gc.gridy = 1; gc.weightx = 0;
         row.add(label("Location:"), gc);
         
@@ -193,22 +198,16 @@ public class JobBrowserPanel extends JPanel {
         row.add(cbLocation, gc);
         
         gc.gridx = 2; gc.gridy = 1; gc.weightx = 0;
-        row.add(label("Experience:"), gc);
-        
-        gc.gridx = 3; gc.gridy = 1; gc.weightx = 0.4;
-        row.add(cbExperience, gc);
-        
-        // Row 3
-        gc.gridx = 0; gc.gridy = 2; gc.weightx = 0;
         row.add(label("Company:"), gc);
         
-        gc.gridx = 1; gc.gridy = 2; gc.weightx = 1;
+        gc.gridx = 3; gc.gridy = 1; gc.weightx = 0.5;
         row.add(cbCompany, gc);
         
-        gc.gridx = 2; gc.gridy = 2; gc.weightx = 0;
+        // Row 3: Time
+        gc.gridx = 0; gc.gridy = 2; gc.weightx = 0;
         row.add(label("Time:"), gc);
         
-        gc.gridx = 3; gc.gridy = 2; gc.weightx = 0.4;
+        gc.gridx = 1; gc.gridy = 2; gc.weightx = 1;
         row.add(cbTime, gc);
         
         fillFiltersFromData();
@@ -224,7 +223,6 @@ public class JobBrowserPanel extends JPanel {
         ActionListener filterListener = e -> applyFilters();
         cbType.addActionListener(filterListener);
         cbLocation.addActionListener(filterListener);
-        cbExperience.addActionListener(filterListener);
         cbCompany.addActionListener(filterListener);
         cbTime.addActionListener(filterListener);
         
@@ -256,13 +254,6 @@ public class JobBrowserPanel extends JPanel {
         cbLocation.addItem("All Locations");
         for (String loc : locs) cbLocation.addItem(loc);
         
-        cbExperience.removeAllItems();
-        cbExperience.addItem("Any");
-        cbExperience.addItem("Entry");
-        cbExperience.addItem("Junior");
-        cbExperience.addItem("Mid");
-        cbExperience.addItem("Senior");
-        
         Set<String> companies = allOffers.stream().map(o -> o.company).collect(Collectors.toCollection(TreeSet::new));
         cbCompany.removeAllItems();
         cbCompany.addItem("All Companies");
@@ -279,7 +270,6 @@ public class JobBrowserPanel extends JPanel {
         txtSearch.setText("");
         cbType.setSelectedIndex(0);
         cbLocation.setSelectedIndex(0);
-        cbExperience.setSelectedIndex(0);
         cbCompany.setSelectedIndex(0);
         cbTime.setSelectedIndex(0);
         applyFilters();
@@ -323,11 +313,6 @@ public class JobBrowserPanel extends JPanel {
                 String locPick = (String) cbLocation.getSelectedItem();
                 if (locPick != null && !locPick.equals("All Locations")) {
                     if (!o.location.equals(locPick)) return false;
-                }
-                
-                String expPick = (String) cbExperience.getSelectedItem();
-                if (expPick != null && !expPick.equals("Any")) {
-                    if (!o.experienceLevel.equals(expPick)) return false;
                 }
                 
                 String compPick = (String) cbCompany.getSelectedItem();
@@ -444,7 +429,7 @@ public class JobBrowserPanel extends JPanel {
         eligReasons.setWrapStyleWord(true);
         eligReasons.setFont(TEXTAREA_FONT);
         eligReasons.setMargin(new Insets(10, 10, 10, 10));
-        eligReasons.setText(check.eligible ? "You meet all the criteria!" : 
+        eligReasons.setText(check.eligible ? "You meet all the criteria!" :
             "You do not meet the following criteria:\n" + String.join("\n", check.reasons));
         
         eligPanel.add(eligStatus, BorderLayout.NORTH);
@@ -463,14 +448,14 @@ public class JobBrowserPanel extends JPanel {
         styleButton(applyBtn, 100);
         applyBtn.addActionListener(e -> {
             if (!check.eligible) {
-                JOptionPane.showMessageDialog(dialog, 
-                    "You are not eligible for this position.", 
-                    "Cannot Apply", 
+                JOptionPane.showMessageDialog(dialog,
+                    "You are not eligible for this position.",
+                    "Cannot Apply",
                     JOptionPane.WARNING_MESSAGE);
             } else {
-                JOptionPane.showMessageDialog(dialog, 
-                    "Application submitted successfully!", 
-                    "Success", 
+                JOptionPane.showMessageDialog(dialog,
+                    "Application submitted successfully!",
+                    "Success",
                     JOptionPane.INFORMATION_MESSAGE);
                 dialog.dispose();
             }
@@ -618,14 +603,13 @@ public class JobBrowserPanel extends JPanel {
         final String company, title, type, salaryText, location;
         final LocalDate deadline;
         final LocalDateTime postedAt;
-        final String experienceLevel;
         final String description;
         final double minCgpa;
         final List<String> acceptedCourses;
         final List<String> acceptedBranches;
         
         Offer(String company, String title, String type, String salaryText, String location,
-              LocalDate deadline, LocalDateTime postedAt, String experienceLevel,
+              LocalDate deadline, LocalDateTime postedAt,
               String description, double minCgpa, List<String> courses, List<String> branches) {
             this.company = company;
             this.title = title;
@@ -634,7 +618,6 @@ public class JobBrowserPanel extends JPanel {
             this.location = location;
             this.deadline = deadline;
             this.postedAt = postedAt;
-            this.experienceLevel = experienceLevel;
             this.description = description;
             this.minCgpa = minCgpa;
             this.acceptedCourses = courses;
@@ -672,27 +655,27 @@ public class JobBrowserPanel extends JPanel {
             
             return List.of(
                 new Offer("MCB Ltd", "Software Engineer", "Full-Time", "Rs 55,000 / month", "Ebène",
-                    LocalDate.now().plusDays(25), now.minusDays(2), "Junior",
+                    LocalDate.now().plusDays(25), now.minusDays(2),
                     "Develop and maintain backend services, APIs, and database integrations for banking systems.",
                     7.0, List.of("BSc (Hons) Computer Science", "BSc (Hons) Information Systems"), List.of("Computer Science")),
                     
                 new Offer("SBM Bank (Mauritius)", "Data Analyst", "Full-Time", "Rs 50,000 / month", "Port Louis",
-                    LocalDate.now().plusDays(30), now.minusDays(10), "Junior",
+                    LocalDate.now().plusDays(30), now.minusDays(10),
                     "Analyze datasets, create reports and dashboards, and support business decision-making.",
                     7.0, List.of("BSc (Hons) Computer Science", "BSc (Hons) Data Science"), List.of("Computer Science", "Data Science")),
                     
                 new Offer("Mauritius Telecom", "Network Support Intern", "Internship", "Rs 18,000 / month", "Port Louis",
-                    LocalDate.now().plusDays(14), now.minusHours(18), "Entry",
+                    LocalDate.now().plusDays(14), now.minusHours(18),
                     "Assist in network monitoring, troubleshooting, and documentation for telecom infrastructure.",
                     6.5, List.of("BSc (Hons) Computer Science", "BSc (Hons) Networking"), List.of("Computer Science", "Networking")),
                     
                 new Offer("Ceridian Mauritius", "Junior Java Developer", "Full-Time", "Rs 48,000 / month", "Moka",
-                    LocalDate.now().plusDays(18), now.minusDays(4), "Junior",
+                    LocalDate.now().plusDays(18), now.minusDays(4),
                     "Work on enterprise applications using Java, SQL, and REST APIs. Collaborate with agile teams.",
                     7.0, List.of("BSc (Hons) Computer Science"), List.of("Computer Science")),
                     
                 new Offer("Infosys Mauritius", "Frontend Developer", "Full-Time", "Rs 45,000 / month", "Trianon",
-                    LocalDate.now().plusDays(22), now.minusDays(3), "Junior",
+                    LocalDate.now().plusDays(22), now.minusDays(3),
                     "Build UI screens using modern web practices. Work with APIs and responsive layouts.",
                     6.8, List.of("BSc (Hons) Computer Science"), List.of("Computer Science"))
             );

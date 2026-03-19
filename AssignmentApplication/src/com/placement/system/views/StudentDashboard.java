@@ -38,7 +38,7 @@ public class StudentDashboard extends BaseDashboard {
     
     private void setupMenuButtons() {
         // Add buttons to the horizontal menu
-        String[] menuItems = {"Dashboard", "Profile", "Browse Offers", "My Applications", "Policy"};
+        String[] menuItems = {"Dashboard", "Profile", "Browse Offers", "My Applications", "My Offers",  "Policy"};
         
         for (String item : menuItems) {
             JButton btn = createMenuButton(item, item.equals("Dashboard"));
@@ -119,16 +119,20 @@ public class StudentDashboard extends BaseDashboard {
         contentPanel.setBackground(MAIN_BG);
         
         MyApplicationsPanel applicationsPanel = new MyApplicationsPanel();
-        
+        MyOffersPanel offersPanel = new MyOffersPanel();
         // Load applications for the current student
         String studentId = currentUser.getId() + "";
         applicationsPanel.loadApplicationsForStudent(studentId);
+        
+        // Load offers for the current student
+        offersPanel.loadOffersForStudent(currentUser.getId());
         
         // Add your panels here
         contentPanel.add(new DashboardHomePanel(), "Dashboard");
         contentPanel.add(new StudentProfilePanel(), "Profile");
         contentPanel.add(new JobBrowserPanel(), "Browse Offers");
         contentPanel.add(applicationsPanel, "My Applications");
+        contentPanel.add(offersPanel, "My Offers");
         contentPanel.add(new PolicyPanel(), "Policy");
     }
     

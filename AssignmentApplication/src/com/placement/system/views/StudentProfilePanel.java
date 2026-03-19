@@ -5,8 +5,6 @@ import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import javax.swing.border.TitledBorder;
 import java.awt.*;
-import java.util.ArrayList;
-import java.util.List;
 
 import com.placement.system.models.Student;
 import com.placement.system.models.User;
@@ -29,12 +27,14 @@ public class StudentProfilePanel extends JPanel {
     private final JTextField txtEmail = new JTextField();
     private final JTextField txtUsername = new JTextField();
     private final JTextField txtPhone = new JTextField();
+    private final JTextArea txtBio = new JTextArea(4, 20);
+    
+    // Academic Information Fields
     private final JTextField txtCourse = new JTextField();
     private final JTextField txtBranch = new JTextField();
-    
-    
     private final JTextField txtCgpa = new JTextField();
     private final JTextField txtYear = new JTextField();
+    private final JTextField txtCvPath = new JTextField();
     
     // Password Change Fields
     private final JPasswordField curPass = new JPasswordField();
@@ -57,7 +57,6 @@ public class StudentProfilePanel extends JPanel {
         setLayout(new BorderLayout());
         setBackground(MAIN_BG);
         
-        // Main container with BoxLayout for vertical stacking (like team's implementation)
         JPanel page = new JPanel();
         page.setLayout(new BoxLayout(page, BoxLayout.Y_AXIS));
         page.setBackground(MAIN_BG);
@@ -72,6 +71,7 @@ public class StudentProfilePanel extends JPanel {
         addFormRow(personalCard, "Email:", txtEmail, 1);
         addFormRow(personalCard, "Username:", txtUsername, 2);
         addFormRow(personalCard, "Phone:", txtPhone, 3);
+        addTextAreaRow(personalCard, "Student Bio:", txtBio, 4);
         page.add(wrapInPadding(personalCard));
         page.add(Box.createVerticalStrut(10));
         
@@ -85,6 +85,7 @@ public class StudentProfilePanel extends JPanel {
         addFormRow(academicCard, "Branch:", txtBranch, 1);
         addFormRow(academicCard, "CGPA:", txtCgpa, 2);
         addFormRow(academicCard, "Year of Study:", txtYear, 3);
+        addFormRow(academicCard, "Curriculum Vitae:", txtCvPath, 4);
         page.add(wrapInPadding(academicCard));
         page.add(Box.createVerticalStrut(10));
         
@@ -111,7 +112,6 @@ public class StudentProfilePanel extends JPanel {
         editWrap.setAlignmentX(Component.LEFT_ALIGNMENT);
         page.add(editWrap);
         
-        // Status label
         lblStatus.setFont(new Font("SansSerif", Font.PLAIN, 12));
         lblStatus.setForeground(new Color(0, 128, 0));
         lblStatus.setBorder(new EmptyBorder(0, 8, 8, 8));
@@ -132,7 +132,6 @@ public class StudentProfilePanel extends JPanel {
         page.add(wrapInPadding(passwordCard));
         page.add(Box.createVerticalStrut(10));
         
-        // Password action button
         JPanel passwordActionRow = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 0));
         passwordActionRow.setBackground(CARD_BG);
         styleButton(btnChangePassword, BTN);
@@ -147,7 +146,6 @@ public class StudentProfilePanel extends JPanel {
         
         btnChangePassword.addActionListener(e -> changePassword());
         
-        // Wrap everything in a scroll pane (like team's implementation)
         JScrollPane scrollPane = new JScrollPane(page);
         scrollPane.setBorder(null);
         scrollPane.getViewport().setBackground(MAIN_BG);
@@ -158,9 +156,6 @@ public class StudentProfilePanel extends JPanel {
         setEditing(false);
     }
     
-    /**
-     * Creates a section bar with accent color (exactly like team's implementation)
-     */
     private JPanel createSectionBar(String text) {
         JPanel bar = new JPanel(new BorderLayout());
         bar.setBackground(ACCENT);
@@ -170,9 +165,6 @@ public class StudentProfilePanel extends JPanel {
         return bar;
     }
     
-    /**
-     * Creates a header label with white text (exactly like team's implementation)
-     */
     private JLabel createHeaderLabel(String text) {
         JLabel label = new JLabel(text);
         label.setForeground(Color.WHITE);
@@ -180,9 +172,6 @@ public class StudentProfilePanel extends JPanel {
         return label;
     }
     
-    /**
-     * Creates a titled block with border (like team's titledBlock method)
-     */
     private JPanel createTitledBlock(String title) {
         JPanel panel = new JPanel();
         panel.setBackground(CARD_BG);
@@ -197,9 +186,6 @@ public class StudentProfilePanel extends JPanel {
         return panel;
     }
     
-    /**
-     * Wraps a component with padding (like team's wrapCard method)
-     */
     private JPanel wrapInPadding(JComponent component) {
         JPanel wrap = new JPanel(new BorderLayout());
         wrap.setBackground(MAIN_BG);
@@ -209,33 +195,62 @@ public class StudentProfilePanel extends JPanel {
         return wrap;
     }
     
-    /**
-     * Adds a form row with label and field (matching team's addFormRows pattern)
-     */
     private void addFormRow(JPanel panel, String labelText, JComponent field, int row) {
         GridBagConstraints gbc = new GridBagConstraints();
         gbc.insets = new Insets(6, 8, 6, 8);
         gbc.fill = GridBagConstraints.HORIZONTAL;
         
-        // Label
         gbc.gridx = 0;
         gbc.gridy = row;
         gbc.weightx = 0.2;
+        gbc.anchor = GridBagConstraints.NORTHWEST;
+        
         JLabel label = new JLabel(labelText);
         label.setFont(new Font("SansSerif", Font.PLAIN, 12));
         label.setForeground(new Color(60, 60, 60));
         panel.add(label, gbc);
         
-        // Field
         gbc.gridx = 1;
         gbc.weightx = 0.8;
-        styleField(field);
         panel.add(field, gbc);
+        
+        styleField(field);
     }
     
-    /**
-     * Style form fields (matching team's styleField method)
-     */
+    private void addTextAreaRow(JPanel panel, String labelText, JTextArea textArea, int row) {
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.insets = new Insets(6, 8, 6, 8);
+        gbc.fill = GridBagConstraints.BOTH;
+        
+        gbc.gridx = 0;
+        gbc.gridy = row;
+        gbc.weightx = 0.2;
+        gbc.weighty = 0;
+        gbc.anchor = GridBagConstraints.NORTHWEST;
+        
+        JLabel label = new JLabel(labelText);
+        label.setFont(new Font("SansSerif", Font.PLAIN, 12));
+        label.setForeground(new Color(60, 60, 60));
+        panel.add(label, gbc);
+        
+        textArea.setLineWrap(true);
+        textArea.setWrapStyleWord(true);
+        textArea.setFont(new Font("SansSerif", Font.PLAIN, 12));
+        textArea.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createLineBorder(BORDER),
+            new EmptyBorder(6, 6, 6, 6)
+        ));
+        
+        JScrollPane scrollPane = new JScrollPane(textArea);
+        scrollPane.setPreferredSize(new Dimension(300, 90));
+        scrollPane.setBorder(BorderFactory.createLineBorder(BORDER));
+        
+        gbc.gridx = 1;
+        gbc.weightx = 0.8;
+        gbc.weighty = 1.0;
+        panel.add(scrollPane, gbc);
+    }
+    
     private void styleField(JComponent field) {
         field.setPreferredSize(new Dimension(300, 28));
         field.setFont(new Font("SansSerif", Font.PLAIN, 12));
@@ -253,9 +268,6 @@ public class StudentProfilePanel extends JPanel {
         }
     }
     
-    /**
-     * Style for navigation buttons (like team's navButton)
-     */
     private void styleNavButton(JButton button) {
         button.setFocusPainted(false);
         button.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
@@ -268,9 +280,6 @@ public class StudentProfilePanel extends JPanel {
         button.setFont(new Font("SansSerif", Font.PLAIN, 12));
     }
     
-    /**
-     * Style for primary action buttons (like team's greyButton)
-     */
     private void styleButton(JButton button, Color bgColor) {
         button.setBackground(bgColor);
         button.setForeground(Color.WHITE);
@@ -296,7 +305,7 @@ public class StudentProfilePanel extends JPanel {
     }
     
     public void loadStudent(Student student) {
-        this.workingCopy = student; // Keep reference to actual student
+        this.workingCopy = student;
         
         // Personal Information
         txtFullName.setText(student.getFullName());
@@ -304,16 +313,19 @@ public class StudentProfilePanel extends JPanel {
         txtUsername.setText(student.getUsername());
         txtPhone.setText(student.getPhone() != null ? student.getPhone() : "");
         
+        // These two lines require matching fields in Student model
+        txtBio.setText(student.getBio() != null ? student.getBio() : "");
+        
         // Academic Details
         txtCourse.setText(student.getCourse());
         txtBranch.setText(student.getBranch());
         txtCgpa.setText(String.valueOf(student.getCgpa()));
         txtYear.setText(student.getYear());
+        txtCvPath.setText(student.getCvPath() != null ? student.getCvPath() : "");
         
         setEditing(false);
         lblStatus.setText(" ");
         
-        // Clear password fields
         curPass.setText("");
         newPass.setText("");
         confPass.setText("");
@@ -327,20 +339,19 @@ public class StudentProfilePanel extends JPanel {
     }
     
     private void saveChanges() {
-        // Validate inputs
-        
         if (txtEmail.getText().trim().isEmpty()) {
             showError("Email cannot be empty");
             return;
         }
-       
         
-        // Update student object
         workingCopy.setEmail(txtEmail.getText().trim());
         workingCopy.setPhone(txtPhone.getText().trim());
         
+        // These two lines require matching fields in Student model
+        workingCopy.setBio(txtBio.getText().trim());
+        workingCopy.setCvPath(txtCvPath.getText().trim());
+        
         // Here you would save to database
-        // MockStudentService.updateStudent(workingCopy);
         
         showSuccess("Profile updated successfully!");
         setEditing(false);
@@ -350,7 +361,6 @@ public class StudentProfilePanel extends JPanel {
     }
     
     private void cancelEdit() {
-        // Reload original data
         loadStudent(workingCopy);
         setEditing(false);
         btnEdit.setVisible(true);
@@ -379,16 +389,13 @@ public class StudentProfilePanel extends JPanel {
             return;
         }
         
-        // Verify current password
         if (!workingCopy.getPassword().equals(current)) {
             showError("Current password is incorrect");
             return;
         }
         
-        // Update password
         workingCopy.setPassword(newPwd);
         
-        // Clear password fields
         curPass.setText("");
         newPass.setText("");
         confPass.setText("");
@@ -397,29 +404,29 @@ public class StudentProfilePanel extends JPanel {
     }
     
     private void showError(String message) {
-        lblStatus.setForeground(new Color(190, 40, 40)); // Red
+        lblStatus.setForeground(new Color(190, 40, 40));
         lblStatus.setText(message);
     }
     
     private void showSuccess(String message) {
-        lblStatus.setForeground(new Color(0, 128, 0)); // Green
+        lblStatus.setForeground(new Color(0, 128, 0));
         lblStatus.setText(message);
     }
     
     private void setEditing(boolean enabled) {
         editing = enabled;
         
-        // Enable/disable fields
         txtFullName.setEditable(false);
         txtEmail.setEditable(enabled);
         txtPhone.setEditable(enabled);
+        txtBio.setEditable(enabled);
         
         txtCourse.setEditable(false);
         txtBranch.setEditable(false);
         txtCgpa.setEditable(false);
         txtYear.setEditable(false);
+        txtCvPath.setEditable(enabled);
         
-        // Username should never be editable
         txtUsername.setEditable(false);
     }
 }

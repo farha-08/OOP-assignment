@@ -62,54 +62,68 @@ public class PolicyPanel extends JPanel {
         JPanel bottomPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
         bottomPanel.setBackground(Color.WHITE);
         bottomPanel.setBorder(BorderFactory.createEmptyBorder(15, 0, 0, 0));
-        
+
         JCheckBox chkAcknowledge = new JCheckBox("I have read and understood all placement policies");
         chkAcknowledge.setFont(new Font("SansSerif", Font.PLAIN, 12));
         chkAcknowledge.setBackground(Color.WHITE);
-        
+
+        JCheckBox chkRules = new JCheckBox("I agree to abide by all placement rules and regulations");
+        chkRules.setFont(new Font("SansSerif", Font.PLAIN, 12));
+        chkRules.setBackground(Color.WHITE);
+
         JButton btnAcknowledge = new JButton("Acknowledge");
         styleButton(btnAcknowledge);
         btnAcknowledge.setEnabled(false);
         
+
+        // Enable only when BOTH checkboxes are selected
         chkAcknowledge.addActionListener(e -> {
-            btnAcknowledge.setEnabled(chkAcknowledge.isSelected());
+            btnAcknowledge.setEnabled(chkAcknowledge.isSelected() && chkRules.isSelected());
         });
-        
+
+        chkRules.addActionListener(e -> {
+            btnAcknowledge.setEnabled(chkAcknowledge.isSelected() && chkRules.isSelected());
+        });
+
         btnAcknowledge.addActionListener(e -> {
             JOptionPane.showMessageDialog(this,
-                "Thank you for acknowledging the placement policies.\nYou may now proceed with the placement process.",
+                "Thank you for acknowledging the placement policies and agreeing to all rules and regulations.\nYou may now proceed with the placement process.",
                 "Acknowledgement Received",
                 JOptionPane.INFORMATION_MESSAGE);
         });
-        
-        JPanel leftBottom = new JPanel(new FlowLayout(FlowLayout.LEFT));
+
+        JPanel leftBottom = new JPanel();
+        leftBottom.setLayout(new BoxLayout(leftBottom, BoxLayout.Y_AXIS));
         leftBottom.setBackground(Color.WHITE);
         leftBottom.add(chkAcknowledge);
-        
+        leftBottom.add(Box.createVerticalStrut(5));
+        leftBottom.add(chkRules);
+
         JPanel rightBottom = new JPanel(new FlowLayout(FlowLayout.RIGHT));
         rightBottom.setBackground(Color.WHITE);
         rightBottom.add(btnAcknowledge);
-        
+
         bottomPanel.setLayout(new BorderLayout());
         bottomPanel.add(leftBottom, BorderLayout.WEST);
         bottomPanel.add(rightBottom, BorderLayout.EAST);
-        
+
         card.add(bottomPanel, BorderLayout.SOUTH);
-        
+
         add(card, BorderLayout.CENTER);
-        
+
         // ================= LAST UPDATED FOOTER =================
         JPanel footer = new JPanel(new FlowLayout(FlowLayout.LEFT));
         footer.setBackground(MAIN_BG);
         footer.setBorder(BorderFactory.createEmptyBorder(5, 0, 0, 0));
-        
+
         JLabel lastUpdated = new JLabel("Last updated: 15 February 2025 | Version 3.2");
         lastUpdated.setForeground(new Color(120, 120, 120));
         lastUpdated.setFont(new Font("SansSerif", Font.ITALIC, 11));
-        
+
         footer.add(lastUpdated);
-        
+
         add(footer, BorderLayout.SOUTH);
+        
     }
     
     private JPanel createGeneralRulesPanel() {
