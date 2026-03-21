@@ -8,10 +8,11 @@ import java.awt.event.ActionListener;
 import com.placement.system.models.User;
 import com.placement.system.models.Student;
 import com.placement.system.models.Company;
+import com.placement.system.models.Admin;
 import com.placement.system.utils.SessionManager;
-import com.placement.system.utils.StudentDataStore;
-import com.placement.system.utils.CompanyDataStore;
-
+import com.placement.system.dao.StudentDAO;
+import com.placement.system.dao.CompanyDAO;
+import com.placement.system.dao.AdminDAO;
 
 public class LoginPanel extends JPanel {
     // Color scheme matching the dashboard
@@ -90,7 +91,7 @@ public class LoginPanel extends JPanel {
         JPanel footer = new JPanel(new BorderLayout());
         footer.setBackground(MAIN_BG);
         footer.setBorder(BorderFactory.createMatteBorder(1, 0, 0, 0, BORDER));
-        JLabel footerLabel = new JLabel("Student Placement System © 2025 - All Rights Reserved");
+        JLabel footerLabel = new JLabel("Student Placement System © 2026 - All Rights Reserved");
         footerLabel.setFont(new Font("SansSerif", Font.PLAIN, 10));
         footerLabel.setForeground(new Color(100, 100, 100));
         footerLabel.setBorder(new EmptyBorder(8, 16, 8, 16));
@@ -173,7 +174,6 @@ public class LoginPanel extends JPanel {
         btnLogin.addActionListener(e -> performLogin());
         
         JButton btnRegister = new JButton("Register");
-        // make register button same prominent style as login
         stylePrimary(btnRegister);
         btnRegister.addActionListener(e -> {
             if (loginListener != null) {
@@ -237,25 +237,29 @@ public class LoginPanel extends JPanel {
         String role = null;
         
         if (rbStudent.isSelected()) {
-            Student student = StudentDataStore.getInstance().getStudentByUsername(identifier);
+            // Student login
+            Student student = StudentDAO.getInstance().getStudentByUsername(identifier);
             if (student == null) {
-                student = StudentDataStore.getInstance().getStudentByEmail(identifier);
+                student = StudentDAO.getInstance().getStudentByEmail(identifier);
             }
             
             if (student != null && student.getPassword().equals(pass)) {
                 user = student;
                 role = "STUDENT";
+                System.out.println("Student login successful: " + student.getFullName());
             }
+            
         } else if (rbCompany.isSelected()) {
+            // Company login
             System.out.println("Attempting company login with: " + identifier);
             
-            Company company = CompanyDataStore.getInstance().getCompanyByUsername(identifier);
+            Company company = CompanyDAO.getInstance().getCompanyByUsername(identifier);
             if (company == null) {
-                company = CompanyDataStore.getInstance().getCompanyByEmail(identifier);
+                company = CompanyDAO.getInstance().getCompanyByEmail(identifier);
             }
             
-            System.out.println("Company found: " + company);
             if (company != null) {
+                System.out.println("Company found: " + company.getCompanyName());
                 System.out.println("Password match: " + company.getPassword().equals(pass));
             }
             
@@ -264,8 +268,23 @@ public class LoginPanel extends JPanel {
                 role = "COMPANY";
                 System.out.println("Login successful for: " + company.getCompanyName());
             }
+            
         } else {
-            // Admin login - to be implemented
+            // Admin login
+            System.out.println("Attempting admin login with: " + identifier);
+            
+            Admin admin = AdminDAO.getInstance().getAdminByUsername(identifier);
+            
+            if (admin != null) {
+                System.out.println("Admin found: " + admin.getFullName());
+                System.out.println("Password match: " + admin.getPassword().equals(pass));
+            }
+            
+            if (admin != null && admin.getPassword().equals(pass)) {
+                user = admin;
+                role = "ADMIN";
+                System.out.println("Login successful for: " + admin.getFullName());
+            }
         }
         
         if (user == null) {

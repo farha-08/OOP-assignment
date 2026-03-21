@@ -15,8 +15,16 @@ import java.util.List;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import com.placement.system.models.Student;
+import com.placement.system.models.Job;
+import com.placement.system.models.Application;
+import com.placement.system.models.Company;
 import com.placement.system.models.User;
 import com.placement.system.utils.SessionManager;
+import com.placement.system.dao.StudentDAO;
+import com.placement.system.dao.JobDAO;
+import com.placement.system.dao.ApplicationDAO;
+import com.placement.system.dao.CompanyDAO;
 
 public class JobBrowserPanel extends JPanel {
     
@@ -27,8 +35,10 @@ public class JobBrowserPanel extends JPanel {
     private static final Color ROW_ALT = new Color(0xE2E2E2);
     private static final Font TEXTAREA_FONT = new Font("SansSerif", Font.PLAIN, 12);
     
-    // Current student from session
-    private StudentProfile currentStudent;
+    // Current student from database
+    private Student currentStudent;
+    private List<Job> allJobs;
+    private Map<Integer, String> companyNameCache = new HashMap<>(); // Cache company names by ID
     
     // UI Components
     private JTextField txtSearch = new JTextField();
@@ -43,33 +53,98 @@ public class JobBrowserPanel extends JPanel {
     private JTable table;
     private TableRowSorter<DefaultTableModel> sorter;
     
-    private List<Offer> allOffers = MockData.offers();
-    
-    // Reference to parent frame for navigation
-    private JFrame parentFrame;
-    
     public JobBrowserPanel() {
-        // Get current student from session
+        loadCurrentStudent();
+        loadJobsFromDatabase();
+        initializePanel();
+    }
+    
+    /**
+     * Load current student from session/database
+     */
+    private void loadCurrentStudent() {
         User user = SessionManager.getInstance().getCurrentUser();
         if (user != null) {
-            // In a real implementation, you'd get these details from the Student model
-            currentStudent = new StudentProfile(
-                user.getFullName(),
-                7.5, // This should come from the actual Student object
-                "BSc (Hons) Computer Science", // This should come from the actual Student object
-                "Computer Science" // This should come from the actual Student object
-            );
-        } else {
-            // Fallback for testing
-            currentStudent = new StudentProfile(
-                "Test Student",
-                7.5,
-                "BSc (Hons) Computer Science",
-                "Computer Science"
-            );
+            if (user instanceof Student) {
+                this.currentStudent = (Student) user;
+            } else {
+                // Load from DAO if not Student instance
+                this.currentStudent = StudentDAO.getInstance().getStudent(user.getId());
+                if (this.currentStudent != null) {
+                    // Update session with Student object
+                    SessionManager.getInstance().setCurrentUser(this.currentStudent);
+                }
+            }
         }
         
-        initializePanel();
+        // Fallback - should not happen in production
+        if (this.currentStudent == null) {
+            System.err.println("Warning: No student found in session for JobBrowserPanel");
+        }
+    }
+    
+    /**
+     * Load all active jobs from database
+     */
+    private void loadJobsFromDatabase() {
+        try {
+            allJobs = JobDAO.getInstance().getAllJobs(true); // Only active jobs
+            
+            // Filter jobs that are still within deadline
+            allJobs = allJobs.stream()
+                .filter(job -> job.getApplicationDeadline() != null && 
+                       !job.getApplicationDeadline().isBefore(LocalDate.now()))
+                .collect(Collectors.toList());
+            
+            // Pre-cache company names for all jobs
+            cacheCompanyNames();
+                
+        } catch (Exception e) {
+            System.err.println("Error loading jobs from database: " + e.getMessage());
+            allJobs = new ArrayList<>();
+        }
+    }
+    
+    /**
+     * Cache company names for all jobs to avoid repeated DB queries
+     */
+    private void cacheCompanyNames() {
+        CompanyDAO companyDAO = CompanyDAO.getInstance();
+        for (Job job : allJobs) {
+            if (!companyNameCache.containsKey(job.getCompanyId())) {
+                Company company = companyDAO.getCompany(job.getCompanyId());
+                if (company != null) {
+                    companyNameCache.put(job.getCompanyId(), company.getCompanyName());
+                } else {
+                    companyNameCache.put(job.getCompanyId(), "Unknown Company");
+                }
+            }
+        }
+        
+        // Also pre-load all company names for filter dropdown
+        List<Company> allCompanies = companyDAO.getAllCompanies();
+        for (Company company : allCompanies) {
+            companyNameCache.putIfAbsent(company.getId(), company.getCompanyName());
+        }
+    }
+    
+    /**
+     * Get company name by company ID
+     */
+    private String getCompanyName(int companyId) {
+        return companyNameCache.getOrDefault(companyId, "Company " + companyId);
+    }
+    
+    /**
+     * Get all unique company names for filter dropdown
+     */
+    private Set<String> getAllCompanyNames() {
+        Set<String> companyNames = new TreeSet<>();
+        for (Job job : allJobs) {
+            String name = getCompanyName(job.getCompanyId());
+            companyNames.add(name);
+        }
+        return companyNames;
     }
     
     private void initializePanel() {
@@ -120,13 +195,13 @@ public class JobBrowserPanel extends JPanel {
         }
         
         // Load data
-        reloadRows(allOffers);
+        reloadRows(allJobs);
         
         // Double-click listener
         table.addMouseListener(new MouseAdapter() {
             @Override public void mouseClicked(MouseEvent e) {
                 if (e.getClickCount() == 2 && table.getSelectedRow() != -1) {
-                    openSelectedOffer();
+                    openSelectedJob();
                 }
             }
         });
@@ -147,7 +222,7 @@ public class JobBrowserPanel extends JPanel {
         
         JButton viewDetails = new JButton("View Details");
         styleButton(viewDetails, 140);
-        viewDetails.addActionListener(e -> openSelectedOffer());
+        viewDetails.addActionListener(e -> openSelectedJob());
         
         JPanel bottomRight = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 6));
         bottomRight.setBackground(MAIN_BG);
@@ -181,7 +256,7 @@ public class JobBrowserPanel extends JPanel {
         row.add(label("Search:"), gc);
         
         gc.gridx = 1; gc.gridy = 0; gc.weightx = 1;
-        txtSearch.setToolTipText("Company or job title...");
+        txtSearch.setToolTipText("Job title...");
         row.add(txtSearch, gc);
         
         gc.gridx = 2; gc.gridy = 0; gc.weightx = 0;
@@ -244,17 +319,26 @@ public class JobBrowserPanel extends JPanel {
     }
     
     private void fillFiltersFromData() {
-        Set<String> types = allOffers.stream().map(o -> o.type).collect(Collectors.toCollection(TreeSet::new));
+        if (allJobs == null) return;
+        
+        Set<String> types = allJobs.stream()
+            .map(j -> j.getEmploymentType())
+            .filter(Objects::nonNull)
+            .collect(Collectors.toCollection(TreeSet::new));
         cbType.removeAllItems();
         cbType.addItem("All Types");
         for (String t : types) cbType.addItem(t);
         
-        Set<String> locs = allOffers.stream().map(o -> o.location).collect(Collectors.toCollection(TreeSet::new));
+        Set<String> locs = allJobs.stream()
+            .map(j -> j.getLocation())
+            .filter(Objects::nonNull)
+            .collect(Collectors.toCollection(TreeSet::new));
         cbLocation.removeAllItems();
         cbLocation.addItem("All Locations");
         for (String loc : locs) cbLocation.addItem(loc);
         
-        Set<String> companies = allOffers.stream().map(o -> o.company).collect(Collectors.toCollection(TreeSet::new));
+        // Use actual company names from CompanyDAO
+        Set<String> companies = getAllCompanyNames();
         cbCompany.removeAllItems();
         cbCompany.addItem("All Companies");
         for (String c : companies) cbCompany.addItem(c);
@@ -275,51 +359,91 @@ public class JobBrowserPanel extends JPanel {
         applyFilters();
     }
     
-    private void reloadRows(List<Offer> offers) {
+    private void reloadRows(List<Job> jobs) {
         model.setRowCount(0);
         DateTimeFormatter df = DateTimeFormatter.ofPattern("yyyy-MM-dd");
-        for (Offer o : offers) {
-            boolean eligible = o.isEligibleFor(currentStudent);
+        
+        if (jobs == null) return;
+        
+        for (Job job : jobs) {
+            boolean eligible = isStudentEligible(job);
             model.addRow(new Object[]{
-                    o.company,
-                    o.title,
-                    o.type,
-                    o.salaryText,
-                    o.location,
-                    df.format(o.deadline),
+                    getCompanyName(job.getCompanyId()),
+                    job.getJobTitle(),
+                    job.getEmploymentType(),
+                    job.getSalaryRange() != null ? job.getSalaryRange() : "Negotiable",
+                    job.getLocation(),
+                    job.getApplicationDeadline() != null ? 
+                        job.getApplicationDeadline().format(df) : "N/A",
                     eligible ? "Yes" : "No"
             });
         }
     }
     
+    /**
+     * Check if current student is eligible for a job
+     */
+    private boolean isStudentEligible(Job job) {
+        if (currentStudent == null) return false;
+        
+        // Check if student is already placed or blocked
+        if ("Placed".equals(currentStudent.getPlacementStatus()) ||
+            "Blocked".equals(currentStudent.getPlacementStatus())) {
+            return false;
+        }
+        
+        // Check CGPA requirement
+        if (currentStudent.getCgpa() < job.getMinCgpa()) {
+            return false;
+        }
+        
+        // Check if student has already applied
+        ApplicationDAO appDAO = ApplicationDAO.getInstance();
+        if (appDAO.hasApplied(currentStudent.getId(), job.getJobId())) {
+            return false;
+        }
+        
+        return true;
+    }
+    
     private void applyFilters() {
+        if (allJobs == null) return;
+        
         RowFilter<DefaultTableModel, Integer> rf = new RowFilter<>() {
             @Override
             public boolean include(Entry<? extends DefaultTableModel, ? extends Integer> entry) {
                 int modelRow = entry.getIdentifier();
-                Offer o = allOffers.get(modelRow);
+                if (modelRow >= allJobs.size()) return false;
                 
+                Job job = allJobs.get(modelRow);
+                
+                // Search filter
                 String q = txtSearch.getText().trim().toLowerCase(Locale.ROOT);
                 if (!q.isEmpty()) {
-                    String hay = (o.company + " " + o.title).toLowerCase(Locale.ROOT);
+                    String hay = (job.getJobTitle() + " " + job.getDescription()).toLowerCase(Locale.ROOT);
                     if (!hay.contains(q)) return false;
                 }
                 
+                // Type filter
                 String typePick = (String) cbType.getSelectedItem();
                 if (typePick != null && !typePick.equals("All Types")) {
-                    if (!o.type.equals(typePick)) return false;
+                    if (job.getEmploymentType() == null || !job.getEmploymentType().equals(typePick)) return false;
                 }
                 
+                // Location filter
                 String locPick = (String) cbLocation.getSelectedItem();
                 if (locPick != null && !locPick.equals("All Locations")) {
-                    if (!o.location.equals(locPick)) return false;
+                    if (job.getLocation() == null || !job.getLocation().equals(locPick)) return false;
                 }
                 
+                // Company filter - using actual company name
                 String compPick = (String) cbCompany.getSelectedItem();
                 if (compPick != null && !compPick.equals("All Companies")) {
-                    if (!o.company.equals(compPick)) return false;
+                    String companyName = getCompanyName(job.getCompanyId());
+                    if (!companyName.equals(compPick)) return false;
                 }
                 
+                // Time filter
                 String timePick = (String) cbTime.getSelectedItem();
                 if (timePick != null && !timePick.equals("Any time")) {
                     LocalDateTime now = LocalDateTime.now();
@@ -330,7 +454,8 @@ public class JobBrowserPanel extends JPanel {
                         case "Past 24 hours" -> cutoff = now.minusHours(24);
                         default -> cutoff = null;
                     }
-                    if (cutoff != null && o.postedAt.isBefore(cutoff)) return false;
+                    if (cutoff != null && job.getPostedDate() != null && 
+                        job.getPostedDate().isBefore(cutoff)) return false;
                 }
                 
                 return true;
@@ -343,25 +468,27 @@ public class JobBrowserPanel extends JPanel {
     
     private void updateStatus() {
         int shown = table.getRowCount();
-        lblStatus.setText(shown + " offer(s) found. Double-click an offer to view details.");
+        int total = allJobs != null ? allJobs.size() : 0;
+        lblStatus.setText(shown + " offer(s) found out of " + total + " total. Double-click to view details.");
     }
     
-    private void openSelectedOffer() {
+    private void openSelectedJob() {
         int viewRow = table.getSelectedRow();
         if (viewRow == -1) {
             JOptionPane.showMessageDialog(this, "Please select an offer first.");
             return;
         }
         int modelRow = table.convertRowIndexToModel(viewRow);
-        Offer selected = allOffers.get(modelRow);
+        if (modelRow >= allJobs.size()) return;
         
-        showOfferDetailsDialog(selected);
+        Job selected = allJobs.get(modelRow);
+        showJobDetailsDialog(selected);
     }
     
-    private void showOfferDetailsDialog(Offer offer) {
-        JDialog dialog = new JDialog((Frame) SwingUtilities.getWindowAncestor(this), "Offer Details", true);
+    private void showJobDetailsDialog(Job job) {
+        JDialog dialog = new JDialog((Frame) SwingUtilities.getWindowAncestor(this), "Job Details", true);
         dialog.setLayout(new BorderLayout());
-        dialog.setSize(700, 600);
+        dialog.setSize(700, 650);
         dialog.setLocationRelativeTo(this);
         
         JPanel mainPanel = new JPanel();
@@ -369,10 +496,13 @@ public class JobBrowserPanel extends JPanel {
         mainPanel.setBackground(MAIN_BG);
         mainPanel.setBorder(new EmptyBorder(10, 10, 10, 10));
         
+        // Get company name
+        String companyName = getCompanyName(job.getCompanyId());
+        
         // Header
         JPanel headerPanel = new JPanel(new BorderLayout());
         headerPanel.setBackground(ACCENT);
-        JLabel titleLabel = new JLabel("  " + offer.title + " at " + offer.company);
+        JLabel titleLabel = new JLabel("  " + job.getJobTitle() + " at " + companyName);
         titleLabel.setForeground(Color.WHITE);
         titleLabel.setFont(new Font("SansSerif", Font.BOLD, 14));
         headerPanel.add(titleLabel, BorderLayout.CENTER);
@@ -381,17 +511,21 @@ public class JobBrowserPanel extends JPanel {
         
         // Job Details
         mainPanel.add(createInfoSection("Job Details", new String[][]{
-            {"Company:", offer.company},
-            {"Title:", offer.title},
-            {"Type:", offer.type},
-            {"Salary:", offer.salaryText},
-            {"Location:", offer.location},
-            {"Deadline:", offer.deadline.format(DateTimeFormatter.ofPattern("yyyy-MM-dd"))},
-            {"Posted:", offer.postedAt.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm"))}
+            {"Company:", companyName},
+            {"Title:", job.getJobTitle()},
+            {"Department:", job.getDepartment() != null ? job.getDepartment() : "N/A"},
+            {"Type:", job.getEmploymentType() != null ? job.getEmploymentType() : "N/A"},
+            {"Salary:", job.getSalaryRange() != null ? job.getSalaryRange() : "Negotiable"},
+            {"Location:", job.getLocation() != null ? job.getLocation() : "N/A"},
+            {"Vacancies:", String.valueOf(job.getVacancies())},
+            {"Deadline:", job.getApplicationDeadline() != null ? 
+                job.getApplicationDeadline().format(DateTimeFormatter.ofPattern("yyyy-MM-dd")) : "N/A"},
+            {"Posted:", job.getPostedDate() != null ? 
+                job.getPostedDate().format(DateTimeFormatter.ofPattern("yyyy-MM-dd")) : "N/A"}
         }));
         
         // Description
-        JTextArea descArea = new JTextArea(offer.description);
+        JTextArea descArea = new JTextArea(job.getDescription());
         descArea.setEditable(false);
         descArea.setLineWrap(true);
         descArea.setWrapStyleWord(true);
@@ -400,41 +534,75 @@ public class JobBrowserPanel extends JPanel {
         JScrollPane descScroll = new JScrollPane(descArea);
         descScroll.setBorder(BorderFactory.createTitledBorder(
             BorderFactory.createLineBorder(ACCENT), "Description"));
-        descScroll.setPreferredSize(new Dimension(650, 100));
+        descScroll.setPreferredSize(new Dimension(650, 120));
         mainPanel.add(descScroll);
         mainPanel.add(Box.createVerticalStrut(10));
         
         // Eligibility Criteria
         mainPanel.add(createInfoSection("Eligibility Criteria", new String[][]{
-            {"Minimum CGPA:", String.valueOf(offer.minCgpa)},
-            {"Accepted Courses:", String.join(", ", offer.acceptedCourses)},
-            {"Accepted Branches:", String.join(", ", offer.acceptedBranches)}
+            {"Minimum CGPA:", String.valueOf(job.getMinCgpa())},
+            {"Status:", job.isActive() ? "Active" : "Closed"}
         }));
         
         // Your Eligibility
-        EligibilityCheck check = offer.checkEligibility(currentStudent);
+        boolean eligible = isStudentEligible(job);
+        boolean alreadyApplied = checkIfApplied(job.getJobId());
+        
         JPanel eligPanel = new JPanel(new BorderLayout());
         eligPanel.setBackground(MAIN_BG);
         eligPanel.setBorder(BorderFactory.createTitledBorder(
             BorderFactory.createLineBorder(ACCENT), "Your Eligibility"));
         
-        JLabel eligStatus = new JLabel("Status: " + (check.eligible ? "Eligible" : "Not Eligible"));
+        String statusMessage;
+        Color statusColor;
+        if (alreadyApplied) {
+            statusMessage = "Status: Already Applied";
+            statusColor = new Color(255, 140, 0); // Orange
+        } else if (eligible) {
+            statusMessage = "Status: Eligible - You meet all requirements!";
+            statusColor = new Color(0x0A6E2A); // Green
+        } else {
+            statusMessage = "Status: Not Eligible";
+            statusColor = Color.RED;
+        }
+        
+        JLabel eligStatus = new JLabel(statusMessage);
         eligStatus.setFont(new Font("SansSerif", Font.BOLD, 12));
-        eligStatus.setForeground(check.eligible ? new Color(0x0A6E2A) : Color.RED);
+        eligStatus.setForeground(statusColor);
         eligStatus.setBorder(new EmptyBorder(5, 10, 5, 10));
         
-        JTextArea eligReasons = new JTextArea();
-        eligReasons.setEditable(false);
-        eligReasons.setLineWrap(true);
-        eligReasons.setWrapStyleWord(true);
-        eligReasons.setFont(TEXTAREA_FONT);
-        eligReasons.setMargin(new Insets(10, 10, 10, 10));
-        eligReasons.setText(check.eligible ? "You meet all the criteria!" :
-            "You do not meet the following criteria:\n" + String.join("\n", check.reasons));
-        
         eligPanel.add(eligStatus, BorderLayout.NORTH);
-        eligPanel.add(new JScrollPane(eligReasons), BorderLayout.CENTER);
+        
+        // Reasons if not eligible
+        if (!eligible && !alreadyApplied && currentStudent != null) {
+            JTextArea eligReasons = new JTextArea();
+            eligReasons.setEditable(false);
+            eligReasons.setLineWrap(true);
+            eligReasons.setWrapStyleWord(true);
+            eligReasons.setFont(TEXTAREA_FONT);
+            eligReasons.setMargin(new Insets(10, 10, 10, 10));
+            
+            StringBuilder reasons = new StringBuilder();
+            if (currentStudent.getCgpa() < job.getMinCgpa()) {
+                reasons.append("- Your CGPA (").append(currentStudent.getCgpa())
+                       .append(") is below minimum required (").append(job.getMinCgpa()).append(")\n");
+            }
+            if ("Placed".equals(currentStudent.getPlacementStatus())) {
+                reasons.append("- You have already been placed\n");
+            }
+            if ("Blocked".equals(currentStudent.getPlacementStatus())) {
+                reasons.append("- Your account is blocked from applying\n");
+            }
+            
+            eligReasons.setText(reasons.length() > 0 ? 
+                "You do not meet the following criteria:\n" + reasons.toString() : 
+                "You are not eligible for this position.");
+            
+            eligPanel.add(new JScrollPane(eligReasons), BorderLayout.CENTER);
+        }
+        
         mainPanel.add(eligPanel);
+        mainPanel.add(Box.createVerticalStrut(10));
         
         // Buttons
         JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 10));
@@ -447,17 +615,18 @@ public class JobBrowserPanel extends JPanel {
         JButton applyBtn = new JButton("Apply");
         styleButton(applyBtn, 100);
         applyBtn.addActionListener(e -> {
-            if (!check.eligible) {
-                JOptionPane.showMessageDialog(dialog,
-                    "You are not eligible for this position.",
-                    "Cannot Apply",
+            if (alreadyApplied) {
+                JOptionPane.showMessageDialog(dialog, 
+                    "You have already applied for this position.", 
+                    "Already Applied", 
+                    JOptionPane.WARNING_MESSAGE);
+            } else if (!eligible) {
+                JOptionPane.showMessageDialog(dialog, 
+                    "You are not eligible for this position.", 
+                    "Cannot Apply", 
                     JOptionPane.WARNING_MESSAGE);
             } else {
-                JOptionPane.showMessageDialog(dialog,
-                    "Application submitted successfully!",
-                    "Success",
-                    JOptionPane.INFORMATION_MESSAGE);
-                dialog.dispose();
+                submitApplication(job, dialog);
             }
         });
         
@@ -473,12 +642,63 @@ public class JobBrowserPanel extends JPanel {
         dialog.setVisible(true);
     }
     
+    /**
+     * Check if student has already applied for a job
+     */
+    private boolean checkIfApplied(int jobId) {
+        if (currentStudent == null) return false;
+        ApplicationDAO appDAO = ApplicationDAO.getInstance();
+        return appDAO.hasApplied(currentStudent.getId(), jobId);
+    }
+    
+    /**
+     * Submit application for a job
+     */
+    private void submitApplication(Job job, JDialog dialog) {
+        if (currentStudent == null) {
+            JOptionPane.showMessageDialog(dialog, 
+                "Please log in to apply.", 
+                "Login Required", 
+                JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+        
+        ApplicationDAO appDAO = ApplicationDAO.getInstance();
+        
+        Application application = new Application();
+        application.setJobId(job.getJobId());
+        application.setStudentId(currentStudent.getId());
+        application.setApplicationDate(LocalDateTime.now());
+        application.setStatus("Applied");
+        
+        boolean success = appDAO.createApplication(application);
+        
+        if (success) {
+            JOptionPane.showMessageDialog(dialog, 
+                "Application submitted successfully!\n\n" +
+                "Job: " + job.getJobTitle() + "\n" +
+                "Company: " + getCompanyName(job.getCompanyId()) + "\n" +
+                "Application ID: " + application.getApplicationId(),
+                "Success", 
+                JOptionPane.INFORMATION_MESSAGE);
+            dialog.dispose();
+            
+            // Refresh the table to update eligibility status
+            reloadRows(allJobs);
+            applyFilters();
+        } else {
+            JOptionPane.showMessageDialog(dialog, 
+                "Failed to submit application. Please try again.", 
+                "Error", 
+                JOptionPane.ERROR_MESSAGE);
+        }
+    }
+    
     private JPanel createInfoSection(String title, String[][] data) {
         JPanel panel = new JPanel(new GridLayout(data.length, 2, 10, 5));
         panel.setBackground(MAIN_BG);
         panel.setBorder(BorderFactory.createTitledBorder(
             BorderFactory.createLineBorder(ACCENT), title));
-        panel.setBorder(new EmptyBorder(10, 10, 10, 10));
         
         for (String[] row : data) {
             JLabel label = new JLabel(row[0]);
@@ -580,105 +800,6 @@ public class JobBrowserPanel extends JPanel {
             else setForeground(Color.BLACK);
             
             return this;
-        }
-    }
-    
-    // ==================== DATA MODELS ====================
-    
-    static class StudentProfile {
-        final String name;
-        final double cgpa;
-        final String course;
-        final String branch;
-        
-        StudentProfile(String name, double cgpa, String course, String branch) {
-            this.name = name;
-            this.cgpa = cgpa;
-            this.course = course;
-            this.branch = branch;
-        }
-    }
-    
-    static class Offer {
-        final String company, title, type, salaryText, location;
-        final LocalDate deadline;
-        final LocalDateTime postedAt;
-        final String description;
-        final double minCgpa;
-        final List<String> acceptedCourses;
-        final List<String> acceptedBranches;
-        
-        Offer(String company, String title, String type, String salaryText, String location,
-              LocalDate deadline, LocalDateTime postedAt,
-              String description, double minCgpa, List<String> courses, List<String> branches) {
-            this.company = company;
-            this.title = title;
-            this.type = type;
-            this.salaryText = salaryText;
-            this.location = location;
-            this.deadline = deadline;
-            this.postedAt = postedAt;
-            this.description = description;
-            this.minCgpa = minCgpa;
-            this.acceptedCourses = courses;
-            this.acceptedBranches = branches;
-        }
-        
-        boolean isEligibleFor(StudentProfile s) { return checkEligibility(s).eligible; }
-        
-        EligibilityCheck checkEligibility(StudentProfile s) {
-            List<String> reasons = new ArrayList<>();
-            if (s.cgpa < minCgpa) reasons.add("- Your CGPA (" + s.cgpa + ") is below minimum (" + minCgpa + ")");
-            if (!acceptedCourses.isEmpty() && !acceptedCourses.contains(s.course))
-                reasons.add("- Your course (" + s.course + ") is not accepted");
-            if (!acceptedBranches.isEmpty() && !acceptedBranches.contains(s.branch))
-                reasons.add("- Your branch (" + s.branch + ") is not accepted");
-            return new EligibilityCheck(reasons.isEmpty(), reasons);
-        }
-    }
-    
-    static class EligibilityCheck {
-        final boolean eligible;
-        final List<String> reasons;
-        
-        EligibilityCheck(boolean eligible, List<String> reasons) {
-            this.eligible = eligible;
-            this.reasons = reasons;
-        }
-    }
-    
-    // ==================== MOCK DATA ====================
-    
-    static class MockData {
-        static List<Offer> offers() {
-            LocalDateTime now = LocalDateTime.now();
-            
-            return List.of(
-                new Offer("MCB Ltd", "Software Engineer", "Full-Time", "Rs 55,000 / month", "Ebène",
-                    LocalDate.now().plusDays(25), now.minusDays(2),
-                    "Develop and maintain backend services, APIs, and database integrations for banking systems.",
-                    7.0, List.of("BSc (Hons) Computer Science", "BSc (Hons) Information Systems"), List.of("Computer Science")),
-                    
-                new Offer("SBM Bank (Mauritius)", "Data Analyst", "Full-Time", "Rs 50,000 / month", "Port Louis",
-                    LocalDate.now().plusDays(30), now.minusDays(10),
-                    "Analyze datasets, create reports and dashboards, and support business decision-making.",
-                    7.0, List.of("BSc (Hons) Computer Science", "BSc (Hons) Data Science"), List.of("Computer Science", "Data Science")),
-                    
-                new Offer("Mauritius Telecom", "Network Support Intern", "Internship", "Rs 18,000 / month", "Port Louis",
-                    LocalDate.now().plusDays(14), now.minusHours(18),
-                    "Assist in network monitoring, troubleshooting, and documentation for telecom infrastructure.",
-                    6.5, List.of("BSc (Hons) Computer Science", "BSc (Hons) Networking"), List.of("Computer Science", "Networking")),
-                    
-                new Offer("Ceridian Mauritius", "Junior Java Developer", "Full-Time", "Rs 48,000 / month", "Moka",
-                    LocalDate.now().plusDays(18), now.minusDays(4),
-                    "Work on enterprise applications using Java, SQL, and REST APIs. Collaborate with agile teams.",
-                    7.0, List.of("BSc (Hons) Computer Science"), List.of("Computer Science")),
-                    
-                new Offer("Infosys Mauritius", "Frontend Developer", "Full-Time", "Rs 45,000 / month", "Trianon",
-                    LocalDate.now().plusDays(22), now.minusDays(3),
-                    "Build UI screens using modern web practices. Work with APIs and responsive layouts.",
-                    6.8, List.of("BSc (Hons) Computer Science"), List.of("Computer Science"))
-            );
         }
     }
 }

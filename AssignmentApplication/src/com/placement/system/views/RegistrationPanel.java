@@ -185,7 +185,7 @@ public class RegistrationPanel extends JPanel {
         JPanel footer = new JPanel(new BorderLayout());
         footer.setBackground(MAIN_BG);
         footer.setBorder(BorderFactory.createMatteBorder(1, 0, 0, 0, BORDER));
-        JLabel footerLabel = new JLabel("Student Placement System © 2025 - All Rights Reserved");
+        JLabel footerLabel = new JLabel("Student Placement System © 2026 - All Rights Reserved");
         footerLabel.setFont(new Font("SansSerif", Font.PLAIN, 10));
         footerLabel.setForeground(new Color(100, 100, 100));
         footerLabel.setBorder(new EmptyBorder(8, 16, 8, 16));

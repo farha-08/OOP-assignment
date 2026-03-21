@@ -5,11 +5,17 @@ import javax.swing.*;
 import javax.swing.border.*;
 import java.awt.*;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+
 import com.placement.system.models.Company;
 import com.placement.system.models.User;
+import com.placement.system.models.Job;
+import com.placement.system.models.Application;
 import com.placement.system.utils.SessionManager;
-import com.placement.system.utils.CompanyDataStore;
+import com.placement.system.dao.CompanyDAO;
+import com.placement.system.dao.JobDAO;
+import com.placement.system.dao.ApplicationDAO;
 
 public class CompanyDashboard extends BaseDashboard {
     
@@ -19,7 +25,7 @@ public class CompanyDashboard extends BaseDashboard {
     protected static final Color BTN_BG = new Color(0x7D, 0x7D, 0x7D);        // #7D7D7D
     protected static final Color BTN_ACTIVE_BG = new Color(0x56, 0x56, 0x56);
     protected static final Color BORDER = new Color(160, 160, 160);           // Light gray border
-    protected static final Color CARD_BG = new Color(0xFF, 0xFF, 0xFF);
+    protected static final Color CARD_BG = new Color(0xE6, 0xE3, 0xD6);
     
     private Company company;
     private Map<String, JButton> menuButtons = new HashMap<>();
@@ -33,24 +39,41 @@ public class CompanyDashboard extends BaseDashboard {
     protected void initializeComponents() {
         // Initialize company FIRST, before any GUI creation
         User currentUser = SessionManager.getInstance().getCurrentUser();
+        System.out.println("Initializing CompanyDashboard for user: " + currentUser);
+        
         if (currentUser instanceof Company) {
             this.company = (Company) currentUser;
+            System.out.println("Company cast successful: " + company.getCompanyName());
         } else {
-            // Fallback - load from repository if needed
-            this.company = CompanyDataStore.getInstance().getCompanyByUsername(currentUser.getUsername());
+            // Fallback - load from database using DAO
+            System.out.println("User is not Company instance, loading from DAO with ID: " + currentUser.getId());
+            this.company = CompanyDAO.getInstance().getCompany(currentUser.getId());
         }
         
         // Call parent initialization
         super.initializeComponents();
         
         // Set status message
-        setStatusMessage("Logged in as: " + company.getCompanyName());
+        if (company != null) {
+            setStatusMessage("Logged in as: " + company.getCompanyName());
+        }
     }
     
     @Override
     public void addNotify() {
         super.addNotify();
-        // This is called after the component hierarchy is fully created
+        // Safety check
+        if (company == null) {
+            System.err.println("ERROR: company is null in addNotify!");
+            // Try to reload from session
+            User currentUser = SessionManager.getInstance().getCurrentUser();
+            if (currentUser instanceof Company) {
+                this.company = (Company) currentUser;
+            } else if (currentUser != null) {
+                this.company = CompanyDAO.getInstance().getCompany(currentUser.getId());
+            }
+        }
+        
         // Now it's safe to setup menu buttons
         setupMenuButtons();
         // Set initial active button
@@ -135,6 +158,16 @@ public class CompanyDashboard extends BaseDashboard {
     
     @Override
     protected void createContentArea() {
+        // Safety check
+        if (company == null) {
+            System.err.println("ERROR: company is null in createContentArea!");
+            JOptionPane.showMessageDialog(this,
+                "Failed to load company data. Please log in again.",
+                "Error",
+                JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+        
         contentLayout = new CardLayout();
         contentPanel = new JPanel(contentLayout);
         contentPanel.setBackground(MAIN_BG);
@@ -162,7 +195,7 @@ public class CompanyDashboard extends BaseDashboard {
     private void handleMenuClick(String menuItem) {
         contentLayout.show(contentPanel, menuItem);
         setStatusMessage("Viewing: " + menuItem);
-        setActiveButton(menuItem); // ✅ always sync highlight with page
+        setActiveButton(menuItem);
     }
     
     /**
@@ -185,7 +218,7 @@ public class CompanyDashboard extends BaseDashboard {
     // ==================== INNER PANEL CLASSES ====================
     
     /**
-     * Dashboard Home Panel
+     * Dashboard Home Panel with REAL data from database
      */
     class DashboardHomePanel extends JPanel {
         public DashboardHomePanel() {
@@ -245,6 +278,26 @@ public class CompanyDashboard extends BaseDashboard {
             welcomeWrapper.add(statusLabel);
             welcomeSubPanel.add(welcomeWrapper, BorderLayout.CENTER);
             
+            // ===== FETCH REAL DATA FROM DATABASE =====
+            JobDAO jobDAO = JobDAO.getInstance();
+            ApplicationDAO appDAO = ApplicationDAO.getInstance();
+            
+            // Get company's jobs
+            List<Job> companyJobs = jobDAO.getJobsByCompany(company.getId());
+            int totalOffers = companyJobs.size();
+            
+            // Count active offers (jobs that are still active)
+            int activeOffers = 0;
+            int totalApplicants = 0;
+            
+            for (Job job : companyJobs) {
+                if (job.isActive()) {
+                    activeOffers++;
+                }
+                // Count applicants for each job
+                totalApplicants += appDAO.getApplicationCountForJob(job.getJobId());
+            }
+            
             // Quick Stats section
             JPanel statsSection = new JPanel(new BorderLayout());
             statsSection.setBackground(MAIN_BG);
@@ -262,20 +315,17 @@ public class CompanyDashboard extends BaseDashboard {
             statsPanel.setBackground(MAIN_BG);
             statsPanel.setBorder(BorderFactory.createEmptyBorder(15, 15, 15, 15));
             
-            // Get real stats from repository
-            int totalOffers = company.getTotalJobsPosted();
-            
-            // Add stat cards
+            // Add stat cards with real data
             statsPanel.add(createStatCard("Total Offers", String.valueOf(totalOffers)));
-            statsPanel.add(createStatCard("Active Offers", "8")); // You'd get this from JobRepository
-            statsPanel.add(createStatCard("Total Applicants", "47")); // You'd get this from ApplicationRepository
+            statsPanel.add(createStatCard("Active Offers", String.valueOf(activeOffers)));
+            statsPanel.add(createStatCard("Total Applicants", String.valueOf(totalApplicants)));
             
             // Add verification status badge
             statsPanel.add(createStatusBadge("Account Status", company.isVerified() ? "Verified" : "Pending"));
             
             statsSection.add(statsPanel, BorderLayout.CENTER);
             
-            // Recent Activity section
+            // Recent Activity section - build from actual applications
             JPanel activityPanel = new JPanel(new BorderLayout());
             activityPanel.setBackground(MAIN_BG);
             activityPanel.setBorder(BorderFactory.createTitledBorder(
@@ -287,16 +337,26 @@ public class CompanyDashboard extends BaseDashboard {
                 Color.BLACK
             ));
             
-            // Create a list for recent applications
-            String[] applications = {
-                "John Doe applied for Software Engineer - 2 hours ago",
-                "Jane Smith applied for Data Analyst - Yesterday",
-                "Mike Johnson applied for Product Manager - 2 days ago",
-                "Sarah Williams applied for Internship - 3 days ago",
-                "New application review pending: 3 candidates"
-            };
+            // Build recent activities from real data
+            DefaultListModel<String> activityModel = new DefaultListModel<>();
             
-            JList<String> activityList = new JList<>(applications);
+            // Get recent applications for company's jobs
+            for (Job job : companyJobs) {
+                List<Application> applications = appDAO.getApplicationsByJob(job.getJobId());
+                for (Application app : applications) {
+                    // Get student name (you might want to create a method to fetch student name)
+                    activityModel.addElement("Student applied for " + job.getJobTitle() + 
+                                           " - Status: " + app.getStatus() + 
+                                           " (" + app.getApplicationDate().toLocalDate() + ")");
+                }
+            }
+            
+            // If no activities, show placeholder
+            if (activityModel.isEmpty()) {
+                activityModel.addElement("No recent applications yet");
+            }
+            
+            JList<String> activityList = new JList<>(activityModel);
             activityList.setFont(new Font("SansSerif", Font.PLAIN, 12));
             activityList.setBackground(CARD_BG);
             activityList.setBorder(BorderFactory.createLineBorder(BORDER));
@@ -396,7 +456,7 @@ public class CompanyDashboard extends BaseDashboard {
             titleLabel.setFont(new Font("SansSerif", Font.PLAIN, 12));
             titleLabel.setHorizontalAlignment(SwingConstants.CENTER);
 
-            // Status text only (no green bar)
+            // Status text
             JLabel statusLabel;
             if ("Verified".equalsIgnoreCase(status)) {
                 statusLabel = new JLabel("✓ Verified");
@@ -419,24 +479,6 @@ public class CompanyDashboard extends BaseDashboard {
             card.add(statusLabel, BorderLayout.CENTER);
 
             return card;
-        }
-        
-        private Color getStatusColor(String status) {
-            switch (status) {
-                case "Verified": return new Color(0, 128, 0); // Green
-                case "Pending": return new Color(255, 140, 0); // Orange
-                case "Suspended": return new Color(178, 34, 34); // Red
-                default: return new Color(70, 130, 180); // Steel blue
-            }
-        }
-        
-        private Color getStatusBorderColor(String status) {
-            switch (status) {
-                case "Verified": return new Color(0, 100, 0); // Dark green
-                case "Pending": return new Color(204, 102, 0); // Dark orange
-                case "Suspended": return new Color(139, 0, 0); // Dark red
-                default: return new Color(0, 51, 102); // Dark blue
-            }
         }
     }
 }

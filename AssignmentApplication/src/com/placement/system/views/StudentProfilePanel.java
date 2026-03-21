@@ -9,6 +9,7 @@ import java.awt.*;
 import com.placement.system.models.Student;
 import com.placement.system.models.User;
 import com.placement.system.utils.SessionManager;
+import com.placement.system.dao.StudentDAO;
 
 public class StudentProfilePanel extends JPanel {
     
@@ -297,10 +298,18 @@ public class StudentProfilePanel extends JPanel {
         if (currentUser instanceof Student) {
             loadStudent((Student) currentUser);
         } else {
-            JOptionPane.showMessageDialog(this,
-                "Error: Current user is not a student",
-                "Error",
-                JOptionPane.ERROR_MESSAGE);
+            // Try to load from DAO if the session doesn't have Student instance
+            Student studentFromDAO = StudentDAO.getInstance().getStudent(currentUser.getId());
+            if (studentFromDAO != null) {
+                loadStudent(studentFromDAO);
+                // Update session with the Student object
+                SessionManager.getInstance().setCurrentUser(studentFromDAO);
+            } else {
+                JOptionPane.showMessageDialog(this,
+                    "Error: Could not load student data",
+                    "Error",
+                    JOptionPane.ERROR_MESSAGE);
+            }
         }
     }
     
@@ -312,16 +321,14 @@ public class StudentProfilePanel extends JPanel {
         txtEmail.setText(student.getEmail());
         txtUsername.setText(student.getUsername());
         txtPhone.setText(student.getPhone() != null ? student.getPhone() : "");
-        
-        // These two lines require matching fields in Student model
-        txtBio.setText(student.getBio() != null ? student.getBio() : "");
+        txtBio.setText(student.getStudentBio() != null ? student.getStudentBio() : "");
         
         // Academic Details
-        txtCourse.setText(student.getCourse());
-        txtBranch.setText(student.getBranch());
+        txtCourse.setText(student.getCourse() != null ? student.getCourse() : "");
+        txtBranch.setText(student.getBranch() != null ? student.getBranch() : "");
         txtCgpa.setText(String.valueOf(student.getCgpa()));
-        txtYear.setText(student.getYear());
-        txtCvPath.setText(student.getCvPath() != null ? student.getCvPath() : "");
+        txtYear.setText(student.getYear() != null ? student.getYear() : "");
+        txtCvPath.setText(student.getResumePath() != null ? student.getResumePath() : "");
         
         setEditing(false);
         lblStatus.setText(" ");
@@ -339,25 +346,32 @@ public class StudentProfilePanel extends JPanel {
     }
     
     private void saveChanges() {
+        // Validate required fields
         if (txtEmail.getText().trim().isEmpty()) {
             showError("Email cannot be empty");
             return;
         }
         
+        // Update working copy with new values
         workingCopy.setEmail(txtEmail.getText().trim());
         workingCopy.setPhone(txtPhone.getText().trim());
+        workingCopy.setStudentBio(txtBio.getText().trim());
+        workingCopy.setResumePath(txtCvPath.getText().trim());
         
-        // These two lines require matching fields in Student model
-        workingCopy.setBio(txtBio.getText().trim());
-        workingCopy.setCvPath(txtCvPath.getText().trim());
+        // Save to database using StudentDAO
+        boolean success = StudentDAO.getInstance().updateStudent(workingCopy);
         
-        // Here you would save to database
-        
-        showSuccess("Profile updated successfully!");
-        setEditing(false);
-        btnEdit.setVisible(true);
-        btnSave.setVisible(false);
-        btnCancel.setVisible(false);
+        if (success) {
+            // Update session with the updated student object
+            SessionManager.getInstance().setCurrentUser(workingCopy);
+            showSuccess("Profile updated successfully!");
+            setEditing(false);
+            btnEdit.setVisible(true);
+            btnSave.setVisible(false);
+            btnCancel.setVisible(false);
+        } else {
+            showError("Failed to update profile. Please try again.");
+        }
     }
     
     private void cancelEdit() {
@@ -389,18 +403,20 @@ public class StudentProfilePanel extends JPanel {
             return;
         }
         
-        if (!workingCopy.getPassword().equals(current)) {
+        // Use StudentDAO to change password (verifies current password)
+        boolean success = StudentDAO.getInstance().changePassword(
+            workingCopy.getId(), current, newPwd
+        );
+        
+        if (success) {
+            workingCopy.setPassword(newPwd);
+            curPass.setText("");
+            newPass.setText("");
+            confPass.setText("");
+            showSuccess("Password changed successfully!");
+        } else {
             showError("Current password is incorrect");
-            return;
         }
-        
-        workingCopy.setPassword(newPwd);
-        
-        curPass.setText("");
-        newPass.setText("");
-        confPass.setText("");
-        
-        showSuccess("Password changed successfully!");
     }
     
     private void showError(String message) {
@@ -416,17 +432,33 @@ public class StudentProfilePanel extends JPanel {
     private void setEditing(boolean enabled) {
         editing = enabled;
         
-        txtFullName.setEditable(false);
+        // Personal fields - editable in edit mode
+        txtFullName.setEditable(false);      // Full name is not editable (from user table)
         txtEmail.setEditable(enabled);
         txtPhone.setEditable(enabled);
-        txtBio.setEditable(enabled);
+        txtBio.setEditable(enabled);          // Bio is now only editable in edit mode
+        txtCvPath.setEditable(enabled);
         
+        // Academic fields - not editable (should be updated by admin)
         txtCourse.setEditable(false);
         txtBranch.setEditable(false);
         txtCgpa.setEditable(false);
         txtYear.setEditable(false);
-        txtCvPath.setEditable(enabled);
         
+        // Username is not editable
         txtUsername.setEditable(false);
+        
+        // Visual indication for editable fields
+        if (enabled) {
+            txtEmail.setBackground(Color.WHITE);
+            txtPhone.setBackground(Color.WHITE);
+            txtBio.setBackground(Color.WHITE);
+            txtCvPath.setBackground(Color.WHITE);
+        } else {
+            txtEmail.setBackground(CARD_BG);
+            txtPhone.setBackground(CARD_BG);
+            txtBio.setBackground(CARD_BG);
+            txtCvPath.setBackground(CARD_BG);
+        }
     }
 }

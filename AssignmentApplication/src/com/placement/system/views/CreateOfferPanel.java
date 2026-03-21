@@ -4,9 +4,18 @@ package com.placement.system.views;
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import java.awt.*;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.List;
-import com.placement.system.views.CompanyOffersPanel;
+
+import com.placement.system.models.Job;
+import com.placement.system.models.Company;
+import com.placement.system.models.User;
+import com.placement.system.utils.SessionManager;
+import com.placement.system.dao.JobDAO;
+import com.placement.system.dao.CompanyDAO;
 
 public class CreateOfferPanel extends JPanel {
     
@@ -17,6 +26,13 @@ public class CreateOfferPanel extends JPanel {
     private static final Color ACCENT_DARK = new Color(0x54, 0x54, 0x54);  // #545454
     private static final Color ACCENT_BTN = new Color(0x7D, 0x7D, 0x7D);   // #7D7D7D
     
+    // Date formatters
+    private static final DateTimeFormatter INPUT_DATE_FORMAT = DateTimeFormatter.ofPattern("dd/MM/yyyy");
+    private static final DateTimeFormatter DB_DATE_FORMAT = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+    
+    // Current company
+    private Company currentCompany;
+    
     // Top fields
     private JTextField jt_title = new JTextField(20);
     private JTextField jt_dept = new JTextField(20);
@@ -26,7 +42,7 @@ public class CreateOfferPanel extends JPanel {
     private JSpinner js_positions = new JSpinner(new SpinnerNumberModel(1, 1, 999, 1));
     private JTextField jt_deadline = new JTextField(20); // dd/mm/yyyy
     private JTextField jt_cgpa = new JTextField(20);
-
+    
     // Text areas
     private JTextArea ta_desc = new JTextArea(3, 30);
     private JTextArea ta_qual = new JTextArea(3, 30);
@@ -40,7 +56,26 @@ public class CreateOfferPanel extends JPanel {
     
     public CreateOfferPanel(Runnable onOfferCreated) {
         this.onOfferCreated = onOfferCreated;
+        loadCurrentCompany();
         setupPanel();
+    }
+    
+    /**
+     * Load current company from session/database
+     */
+    private void loadCurrentCompany() {
+        User user = SessionManager.getInstance().getCurrentUser();
+        if (user != null) {
+            if (user instanceof Company) {
+                this.currentCompany = (Company) user;
+            } else {
+                // Load from DAO if not Company instance
+                this.currentCompany = CompanyDAO.getInstance().getCompany(user.getId());
+                if (this.currentCompany != null) {
+                    SessionManager.getInstance().setCurrentUser(this.currentCompany);
+                }
+            }
+        }
     }
     
     private void setupPanel() {
@@ -83,26 +118,26 @@ public class CreateOfferPanel extends JPanel {
         formGrid.setBackground(Color.WHITE);
         
         // Row 1
-        formGrid.add(new JLabel("Job Title"));
+        formGrid.add(new JLabel("Job Title *"));
         formGrid.add(new JLabel("Department"));
         formGrid.add(jt_title);
         formGrid.add(jt_dept);
         
         // Row 2
-        formGrid.add(new JLabel("Location"));
-        formGrid.add(new JLabel("Employment Type"));
+        formGrid.add(new JLabel("Location *"));
+        formGrid.add(new JLabel("Employment Type *"));
         formGrid.add(jt_location);
         formGrid.add(jc_type);
         
         // Row 3
         formGrid.add(new JLabel("Salary Range"));
-        formGrid.add(new JLabel("Number of Positions"));
+        formGrid.add(new JLabel("Number of Positions *"));
         formGrid.add(jt_salary);
         formGrid.add(js_positions);
         
         // Row 4
-        formGrid.add(new JLabel("Application Deadline (dd/mm/yyyy)"));
-        formGrid.add(new JLabel("Minimum CGPA"));
+        formGrid.add(new JLabel("Application Deadline (dd/mm/yyyy) *"));
+        formGrid.add(new JLabel("Minimum CGPA *"));
         formGrid.add(jt_deadline);
         formGrid.add(jt_cgpa);
         
@@ -114,7 +149,7 @@ public class CreateOfferPanel extends JPanel {
         
         JPanel descPanel = new JPanel(new BorderLayout());
         descPanel.setBackground(Color.WHITE);
-        descPanel.add(new JLabel("Job Description"), BorderLayout.NORTH);
+        descPanel.add(new JLabel("Job Description *"), BorderLayout.NORTH);
         descPanel.add(descScroll, BorderLayout.CENTER);
         
         // ---------- QUALIFICATIONS PANEL ----------
@@ -146,6 +181,12 @@ public class CreateOfferPanel extends JPanel {
         skillsDisplayPanel.setBorder(BorderFactory.createEmptyBorder(5, 0, 0, 0));
         skillsPanel.add(skillsDisplayPanel, BorderLayout.SOUTH);
         
+        // Note about required fields
+        JLabel noteLabel = new JLabel("* Required fields");
+        noteLabel.setFont(new Font("SansSerif", Font.ITALIC, 11));
+        noteLabel.setForeground(new Color(100, 100, 100));
+        noteLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
+        
         // ---------- BODY LAYOUT ----------
         JPanel body = new JPanel();
         body.setBackground(Color.WHITE);
@@ -155,6 +196,7 @@ public class CreateOfferPanel extends JPanel {
         descPanel.setAlignmentX(Component.LEFT_ALIGNMENT);
         qualPanel.setAlignmentX(Component.LEFT_ALIGNMENT);
         skillsPanel.setAlignmentX(Component.LEFT_ALIGNMENT);
+        noteLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
 
         body.add(formGrid);
         body.add(Box.createVerticalStrut(15));
@@ -163,6 +205,8 @@ public class CreateOfferPanel extends JPanel {
         body.add(qualPanel);
         body.add(Box.createVerticalStrut(15));
         body.add(skillsPanel);
+        body.add(Box.createVerticalStrut(10));
+        body.add(noteLabel);
 
         JScrollPane bodyScroll = new JScrollPane(body);
         bodyScroll.setBorder(BorderFactory.createEmptyBorder());
@@ -213,56 +257,126 @@ public class CreateOfferPanel extends JPanel {
             updateSkillsDisplay(skillsDisplayPanel);
         });
         
-        btnCreate.addActionListener(e -> {
-            // Validation
-            String title = jt_title.getText().trim();
-            if (title.isEmpty()) {
+        btnCreate.addActionListener(e -> createJobOffer());
+    }
+    
+    /**
+     * Create a new job offer and save to database
+     */
+    private void createJobOffer() {
+        // Validate current company
+        if (currentCompany == null) {
+            loadCurrentCompany();
+            if (currentCompany == null) {
                 JOptionPane.showMessageDialog(this, 
-                    "Job Title is required.", 
-                    "Validation Error", 
+                    "Company not found. Please log in again.", 
+                    "Error", 
                     JOptionPane.ERROR_MESSAGE);
                 return;
             }
-            
-            String dept = jt_dept.getText().trim();
-            String loc = jt_location.getText().trim();
-            String type = jc_type.getSelectedItem().toString();
-            String salary = jt_salary.getText().trim();
-            int positions = (Integer) js_positions.getValue();
-            String deadline = jt_deadline.getText().trim();
-            String desc = ta_desc.getText().trim();
-            String qual = ta_qual.getText().trim();
-            String cgpa = jt_cgpa.getText().trim();
-            // ✅ Save the new offer into the same store used by "My Offers"
-            CompanyOffersPanel.CompanyDataStore.getInstance().addOffer(
-                new CompanyOffersPanel.JobOffer(
-                    title,
-                    dept.isEmpty() ? "-" : dept,
-                    loc.isEmpty() ? "-" : loc,
-                    type,
-                    salary.isEmpty() ? "-" : salary,
-                    positions,
-                    deadline.isEmpty() ? "-" : deadline,
-                    cgpa.isEmpty() ? "-" : cgpa,
-                    desc.isEmpty() ? "-" : desc,
-                    qual.isEmpty() ? "-" : qual,
-                    skillsList.isEmpty() ? new String[]{"-"} : skillsList.toArray(new String[0]),
-                    0 // applicants count
-                )
-            );
-            // Here you would save to database using your data store
-            // For now, just show success message
+        }
+        
+        // Get form values
+        String title = jt_title.getText().trim();
+        String dept = jt_dept.getText().trim();
+        String location = jt_location.getText().trim();
+        String type = jc_type.getSelectedItem().toString();
+        String salary = jt_salary.getText().trim();
+        int positions = (Integer) js_positions.getValue();
+        String deadlineStr = jt_deadline.getText().trim();
+        String cgpaStr = jt_cgpa.getText().trim();
+        String description = ta_desc.getText().trim();
+        String qualifications = ta_qual.getText().trim();
+        
+        // Validate required fields
+        if (title.isEmpty()) {
+            showError("Job Title is required.");
+            return;
+        }
+        
+        if (location.isEmpty()) {
+            showError("Location is required.");
+            return;
+        }
+        
+        if (deadlineStr.isEmpty()) {
+            showError("Application Deadline is required.");
+            return;
+        }
+        
+        if (cgpaStr.isEmpty()) {
+            showError("Minimum CGPA is required.");
+            return;
+        }
+        
+        if (description.isEmpty()) {
+            showError("Job Description is required.");
+            return;
+        }
+        
+        // Parse and validate deadline
+        LocalDate deadline;
+        try {
+            deadline = LocalDate.parse(deadlineStr, INPUT_DATE_FORMAT);
+            if (deadline.isBefore(LocalDate.now())) {
+                showError("Deadline cannot be in the past.");
+                return;
+            }
+        } catch (DateTimeParseException e) {
+            showError("Invalid date format. Please use dd/mm/yyyy");
+            return;
+        }
+        
+        // Parse and validate CGPA
+        double minCgpa;
+        try {
+            minCgpa = Double.parseDouble(cgpaStr);
+            if (minCgpa < 0 || minCgpa > 10) {
+                showError("CGPA must be between 0 and 10.");
+                return;
+            }
+        } catch (NumberFormatException e) {
+            showError("Invalid CGPA. Please enter a number.");
+            return;
+        }
+        
+        // Create Job object
+        Job job = new Job();
+        job.setCompanyId(currentCompany.getId());
+        job.setJobTitle(title);
+        job.setDepartment(dept.isEmpty() ? null : dept);
+        job.setLocation(location);
+        job.setEmploymentType(type);
+        job.setSalaryRange(salary.isEmpty() ? null : salary);
+        job.setVacancies(positions);
+        job.setApplicationDeadline(deadline);
+        job.setMinCgpa(minCgpa);
+        job.setDescription(description);
+        // Note: Skills and qualifications are stored but not in the Job table yet
+        // You might want to add a skills column to jobs table or create a separate table
+        
+        // Save to database
+        JobDAO jobDAO = JobDAO.getInstance();
+        boolean success = jobDAO.createJob(job);
+        
+        if (success) {
+            // Build success message
             StringBuilder message = new StringBuilder();
             message.append("Job Offer Created Successfully!\n\n");
+            message.append("Job ID: ").append(job.getJobId()).append("\n");
             message.append("Title: ").append(title).append("\n");
-            message.append("Department: ").append(dept).append("\n");
-            message.append("Location: ").append(loc).append("\n");
+            message.append("Company: ").append(currentCompany.getCompanyName()).append("\n");
+            message.append("Location: ").append(location).append("\n");
             message.append("Type: ").append(type).append("\n");
-            message.append("Salary: ").append(salary).append("\n");
+            if (!salary.isEmpty()) {
+                message.append("Salary: ").append(salary).append("\n");
+            }
             message.append("Positions: ").append(positions).append("\n");
-            message.append("Deadline: ").append(deadline).append("\n");        
-            message.append("Minimum CGPA: ").append(cgpa).append("\n");
-            message.append("Skills: ").append(String.join(", ", skillsList));
+            message.append("Deadline: ").append(deadline.format(INPUT_DATE_FORMAT)).append("\n");
+            message.append("Minimum CGPA: ").append(minCgpa).append("\n");
+            if (!skillsList.isEmpty()) {
+                message.append("Skills: ").append(String.join(", ", skillsList)).append("\n");
+            }
             
             JOptionPane.showMessageDialog(this, 
                 message.toString(), 
@@ -276,7 +390,16 @@ public class CreateOfferPanel extends JPanel {
             if (onOfferCreated != null) {
                 onOfferCreated.run();
             }
-        });
+        } else {
+            showError("Failed to create job offer. Please try again.");
+        }
+    }
+    
+    private void showError(String message) {
+        JOptionPane.showMessageDialog(this, 
+            message, 
+            "Validation Error", 
+            JOptionPane.ERROR_MESSAGE);
     }
     
     private void updateSkillsDisplay(JPanel displayPanel) {

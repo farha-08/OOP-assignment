@@ -9,9 +9,20 @@ import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
 import java.util.List;
-import java.util.function.IntFunction;
+import java.util.*;
+import java.util.stream.Collectors;
+
+import com.placement.system.models.Job;
+import com.placement.system.models.Application;
+import com.placement.system.models.Company;
+import com.placement.system.models.User;
+import com.placement.system.models.Student;
+import com.placement.system.utils.SessionManager;
+import com.placement.system.dao.JobDAO;
+import com.placement.system.dao.ApplicationDAO;
+import com.placement.system.dao.CompanyDAO;
+import com.placement.system.dao.StudentDAO;
 
 public class CompanyOffersPanel extends JPanel {
     
@@ -21,23 +32,32 @@ public class CompanyOffersPanel extends JPanel {
     private static final Color MAIN_BG = new Color(0xCF, 0xCF, 0xCF);      // #CFCFCF
     private static final Color ACCENT_DARK = new Color(0x54, 0x54, 0x54);  // #545454
     private static final Color ACCENT_BUTTON = new Color(0x7D, 0x7D, 0x7D); // #7D7D7D
-
     private static final Color STATUS_OPEN = new Color(0, 180, 80);
-    private static final Color STATUS_CLOSED = new Color(120, 120, 120); // grey
-    private static final DateTimeFormatter DEADLINE_FMT = DateTimeFormatter.ofPattern("dd/MM/yyyy");
+    private static final Color STATUS_CLOSED = new Color(120, 120, 120);
+    private static final Color ACCENT = new Color(0x54, 0x54, 0x54);
     
-    private CompanyDataStore store;
+    private static final DateTimeFormatter DEADLINE_FMT = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+    private static final DateTimeFormatter DISPLAY_DEADLINE_FMT = DateTimeFormatter.ofPattern("dd/MM/yyyy");
+    
+    private Company currentCompany;
+    private List<Job> companyJobs;
+    private Map<Integer, Integer> applicationCountCache = new HashMap<>();
+    private Runnable onCreateOfferCallback;
+    
+    // Store references to components for rebuilding
     private JPanel cardsGrid;
     private JPanel wrapper;
-    private Runnable onCreateOfferCallback;
+    private JScrollPane scrollPane;
     
     public CompanyOffersPanel(Runnable onCreateOfferCallback) {
         this.onCreateOfferCallback = onCreateOfferCallback;
-        this.store = CompanyDataStore.getInstance(); // Assuming singleton pattern
         
         setLayout(new BorderLayout(0, 12));
         setBackground(MAIN_BG);
         setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
+        
+        // Load current company
+        loadCurrentCompany();
         
         // Header with Create Offer button
         JPanel header = new JPanel(new BorderLayout());
@@ -57,7 +77,7 @@ public class CompanyOffersPanel extends JPanel {
         titlePanel.add(sub);
         
         JButton btnCreateOffer = new JButton("+ Create New Offer");
-        styleButton(btnCreateOffer);
+        stylePrimary(btnCreateOffer);
         btnCreateOffer.addActionListener(e -> {
             if (onCreateOfferCallback != null) {
                 onCreateOfferCallback.run();
@@ -77,21 +97,97 @@ public class CompanyOffersPanel extends JPanel {
         wrapper.add(cardsGrid, BorderLayout.NORTH);
         wrapper.setBackground(MAIN_BG);
         
-        JScrollPane sp = new JScrollPane(wrapper);
-        sp.getVerticalScrollBar().setUnitIncrement(16);
-        sp.setBorder(BorderFactory.createEmptyBorder());
-        add(sp, BorderLayout.CENTER);
+        scrollPane = new JScrollPane(wrapper);
+        scrollPane.getVerticalScrollBar().setUnitIncrement(16);
+        scrollPane.setBorder(BorderFactory.createEmptyBorder());
+        add(scrollPane, BorderLayout.CENTER);
         
         // Initial refresh
         refresh();
     }
     
+    /**
+     * Load current company from session/database
+     */
+    private void loadCurrentCompany() {
+        User user = SessionManager.getInstance().getCurrentUser();
+        if (user != null) {
+            if (user instanceof Company) {
+                this.currentCompany = (Company) user;
+            } else {
+                // Load from DAO if not Company instance
+                this.currentCompany = CompanyDAO.getInstance().getCompany(user.getId());
+                if (this.currentCompany != null) {
+                    SessionManager.getInstance().setCurrentUser(this.currentCompany);
+                }
+            }
+        }
+    }
+    
+    /**
+     * Refresh the job offers panel
+     */
     public void refresh() {
+        if (currentCompany == null) {
+            loadCurrentCompany();
+            if (currentCompany == null) {
+                return;
+            }
+        }
+        
+        // Fetch jobs for this company from database
+        JobDAO jobDAO = JobDAO.getInstance();
+        companyJobs = jobDAO.getJobsByCompany(currentCompany.getId());
+        
+        // Pre-cache application counts for each job
+        cacheApplicationCounts();
+        
+        // Rebuild the grid
+        rebuildGrid();
+    }
+    
+    /**
+     * Cache application counts for all company jobs
+     */
+    private void cacheApplicationCounts() {
+        ApplicationDAO appDAO = ApplicationDAO.getInstance();
+        for (Job job : companyJobs) {
+            int count = appDAO.getApplicationCountForJob(job.getJobId());
+            applicationCountCache.put(job.getJobId(), count);
+        }
+    }
+    
+    /**
+     * Get application count for a job
+     */
+    private int getApplicationCount(Job job) {
+        return applicationCountCache.getOrDefault(job.getJobId(), 0);
+    }
+    
+    /**
+     * Check if a job is closed (deadline passed)
+     */
+    private boolean isJobClosed(Job job) {
+        if (job.getApplicationDeadline() == null) return false;
+        return LocalDate.now().isAfter(job.getApplicationDeadline());
+    }
+    
+    /**
+     * Format deadline for display
+     */
+    private String formatDeadline(LocalDate deadline) {
+        if (deadline == null) return "N/A";
+        return deadline.format(DISPLAY_DEADLINE_FMT);
+    }
+    
+    /**
+     * Rebuild the grid of job cards
+     */
+    private void rebuildGrid() {
+        // Clear existing cards
         cardsGrid.removeAll();
         
-        List<JobOffer> offers = store.getOffers();
-        
-        if (offers.isEmpty()) {
+        if (companyJobs == null || companyJobs.isEmpty()) {
             cardsGrid.setLayout(new GridLayout(1, 1));
             JPanel emptyPanel = new JPanel(new BorderLayout());
             emptyPanel.setBackground(Color.WHITE);
@@ -108,18 +204,22 @@ public class CompanyOffersPanel extends JPanel {
             cardsGrid.add(emptyPanel);
         } else {
             cardsGrid.setLayout(new GridLayout(0, 3, 15, 15));
-            for (JobOffer offer : offers) {
-                cardsGrid.add(buildCard(offer));
+            for (Job job : companyJobs) {
+                cardsGrid.add(buildCard(job));
             }
         }
         
+        // Refresh the UI
         cardsGrid.revalidate();
         cardsGrid.repaint();
         wrapper.revalidate();
         wrapper.repaint();
     }
     
-    private JPanel buildCard(JobOffer offer) {
+    /**
+     * Build a card for a single job
+     */
+    private JPanel buildCard(Job job) {
         JPanel card = new JPanel(new BorderLayout(0, 10));
         card.setBackground(Color.WHITE);
         card.setBorder(BorderFactory.createCompoundBorder(
@@ -127,13 +227,13 @@ public class CompanyOffersPanel extends JPanel {
                 BorderFactory.createEmptyBorder(14, 14, 14, 14)
         ));
         
+        boolean closed = isJobClosed(job);
+        
         // Top row: title + status badge
         JPanel top = new JPanel(new BorderLayout());
-        JLabel title = new JLabel(offer.getTitle());
+        JLabel title = new JLabel(job.getJobTitle());
         title.setFont(title.getFont().deriveFont(Font.BOLD, 14f));
         
-        boolean closed = isOfferClosed(offer);
-
         JLabel badge = new JLabel(closed ? "Closed" : "Open");
         badge.setOpaque(true);
         badge.setBackground(closed ? STATUS_CLOSED : STATUS_OPEN);
@@ -144,7 +244,7 @@ public class CompanyOffersPanel extends JPanel {
         top.add(badge, BorderLayout.EAST);
         
         // Department
-        JLabel dept = new JLabel(offer.getDepartment());
+        JLabel dept = new JLabel(job.getDepartment() != null ? job.getDepartment() : "General");
         dept.setForeground(new Color(80, 80, 80));
         
         JPanel topWrap = new JPanel(new GridLayout(2, 1, 0, 4));
@@ -155,20 +255,11 @@ public class CompanyOffersPanel extends JPanel {
         
         // Middle info
         JPanel info = new JPanel(new GridLayout(2, 2, 10, 6));
-        info.add(new JLabel("📍 " + offer.getLocation()));
-        info.add(new JLabel("🕒 " + offer.getType()));
-        info.add(new JLabel("👥 " + offer.getApplicants() + " applicant(s)"));
-        info.add(new JLabel("📅 " + offer.getDeadline()));
+        info.add(new JLabel(job.getLocation() != null ? job.getLocation() : "TBD"));
+        info.add(new JLabel(job.getEmploymentType() != null ? job.getEmploymentType() : "N/A"));
+        info.add(new JLabel(getApplicationCount(job) + " applicant(s)"));
+        info.add(new JLabel(formatDeadline(job.getApplicationDeadline())));
         card.add(info, BorderLayout.CENTER);
-        
-        // Skills chips
-        JPanel chips = new JPanel(new FlowLayout(FlowLayout.LEFT, 6, 0));
-        String[] skills = offer.getSkills();
-        int show = Math.min(skills.length, 4);
-        for (int i = 0; i < show; i++) {
-            chips.add(createChip(skills[i]));
-        }
-        card.add(chips, BorderLayout.SOUTH);
         
         // View details button
         JButton btn = new JButton("View Details");
@@ -176,7 +267,7 @@ public class CompanyOffersPanel extends JPanel {
         btn.setForeground(Color.WHITE);
         btn.setFocusPainted(false);
         btn.setBorder(BorderFactory.createEmptyBorder(8, 10, 8, 10));
-        btn.addActionListener(e -> showDetails(offer));
+        btn.addActionListener(e -> showJobDetails(job));
         
         JPanel btnWrap = new JPanel(new BorderLayout());
         btnWrap.setBorder(BorderFactory.createEmptyBorder(10, 0, 0, 0));
@@ -186,54 +277,39 @@ public class CompanyOffersPanel extends JPanel {
         outer.add(card, BorderLayout.CENTER);
         outer.add(btnWrap, BorderLayout.SOUTH);
         outer.setBackground(MAIN_BG);
-        outer.setPreferredSize(new Dimension(320, 220));
+        outer.setPreferredSize(new Dimension(320, 180));
         
         return outer;
     }
     
-    private JLabel createChip(String text) {
-        JLabel c = new JLabel(text);
-        c.setOpaque(true);
-        c.setBackground(new Color(230, 235, 245));
-        c.setBorder(BorderFactory.createEmptyBorder(4, 10, 4, 10));
-        return c;
-    }
-    private boolean isOfferClosed(JobOffer offer) {
-    try {
-        LocalDate deadline = LocalDate.parse(offer.getDeadline().trim(), DEADLINE_FMT);
-        return LocalDate.now().isAfter(deadline); // after deadline => closed
-    } catch (Exception e) {
-        // If deadline format is wrong, keep it OPEN (safe default)
-        return false;
-    }
-}
-    
-    private void showDetails(JobOffer offer) {
-        // Parent window (so dialog centers properly)
+    /**
+     * Show job details dialog with applicants
+     */
+    private void showJobDetails(Job job) {
         Frame owner = (Frame) SwingUtilities.getWindowAncestor(this);
         
         JDialog dialog = new JDialog(owner, "Job Offer Details", true);
         dialog.setDefaultCloseOperation(JDialog.DISPOSE_ON_CLOSE);
         dialog.setLayout(new BorderLayout());
-        dialog.setSize(880, 650);
+        dialog.setSize(900, 700);
         dialog.setLocationRelativeTo(this);
         
         JPanel root = new JPanel(new BorderLayout(0, 12));
         root.setBorder(BorderFactory.createEmptyBorder(18, 18, 18, 18));
         root.setBackground(MAIN_BG);
         
-        // ================= HEADER (Title + badge + close) =================
+        // ================= HEADER =================
         JPanel header = new JPanel(new BorderLayout(10, 0));
         header.setBackground(MAIN_BG);
         
         JPanel left = new JPanel(new GridLayout(2, 1, 0, 4));
         left.setBackground(MAIN_BG);
         
-        JLabel lblTitle = new JLabel(offer.getTitle());
+        JLabel lblTitle = new JLabel(job.getJobTitle());
         lblTitle.setFont(lblTitle.getFont().deriveFont(Font.BOLD, 22f));
         lblTitle.setForeground(ACCENT_DARK);
         
-        JLabel lblDept = new JLabel(offer.getDepartment());
+        JLabel lblDept = new JLabel(job.getDepartment() != null ? job.getDepartment() : "General");
         lblDept.setForeground(new Color(90, 90, 90));
         
         left.add(lblTitle);
@@ -242,45 +318,47 @@ public class CompanyOffersPanel extends JPanel {
         JPanel right = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 0));
         right.setBackground(MAIN_BG);
         
-        boolean closed = isOfferClosed(offer);
-
+        boolean closed = isJobClosed(job);
         JLabel badge = new JLabel(closed ? "Closed" : "Open");
         badge.setOpaque(true);
         badge.setBackground(closed ? STATUS_CLOSED : STATUS_OPEN);
         badge.setForeground(Color.WHITE);
         badge.setBorder(BorderFactory.createEmptyBorder(5, 12, 5, 12));
         
-        JButton btnClose = new JButton("✕");
-        btnClose.setFocusPainted(false);
-        btnClose.setBorder(BorderFactory.createEmptyBorder(5, 10, 5, 10));
-        btnClose.addActionListener(e -> dialog.dispose());
-        
         right.add(badge);
-        right.add(btnClose);
         
         header.add(left, BorderLayout.WEST);
         header.add(right, BorderLayout.EAST);
         
         root.add(header, BorderLayout.NORTH);
         
-        // ================= TOP INFO ROW =================
-        JPanel info = new JPanel(new GridLayout(4, 2, 14, 8));
+     // ================= TOP INFO ROW (COMPACT - FLOW LAYOUT) =================
+        JPanel info = new JPanel();
+        info.setLayout(new BoxLayout(info, BoxLayout.Y_AXIS));
         info.setBackground(Color.WHITE);
         info.setBorder(BorderFactory.createCompoundBorder(
             BorderFactory.createLineBorder(Color.LIGHT_GRAY),
             BorderFactory.createEmptyBorder(12, 12, 12, 12)
         ));
-        
-        info.add(createInfoLabel(offer.getLocation()));
-        info.add(createInfoLabel(offer.getType()));
-        info.add(createInfoLabel(offer.getSalary()));
-        info.add(createInfoLabel(offer.getPositions() + " position(s)"));
-        info.add(createInfoLabel("Deadline: " + offer.getDeadline()));
-        info.add(createInfoLabel("Minimum CGPA: " + offer.getCgpa()));
 
-        String created = LocalDate.now().format(DateTimeFormatter.ofPattern("dd MMM yyyy"));
-        info.add(createInfoLabel("Created: " + created));
-        
+        // First row of info
+        JPanel row1 = new JPanel(new FlowLayout(FlowLayout.LEFT, 20, 5));
+        row1.setBackground(Color.WHITE);
+        row1.add(createInfoPair("Location:", job.getLocation() != null ? job.getLocation() : "TBD"));
+        row1.add(createInfoPair("Type:", job.getEmploymentType() != null ? job.getEmploymentType() : "N/A"));
+        row1.add(createInfoPair("Salary:", job.getSalaryRange() != null ? job.getSalaryRange() : "Negotiable"));
+
+        // Second row of info
+        JPanel row2 = new JPanel(new FlowLayout(FlowLayout.LEFT, 20, 5));
+        row2.setBackground(Color.WHITE);
+        row2.add(createInfoPair("Vacancies:", String.valueOf(job.getVacancies())));
+        row2.add(createInfoPair("Deadline:", formatDeadline(job.getApplicationDeadline())));
+        row2.add(createInfoPair("Minimum CGPA:", String.valueOf(job.getMinCgpa())));
+
+        info.add(row1);
+        info.add(Box.createVerticalStrut(5));
+        info.add(row2);
+
         root.add(info, BorderLayout.CENTER);
         
         // ================= MAIN CONTENT (scroll) =================
@@ -290,44 +368,43 @@ public class CompanyOffersPanel extends JPanel {
         content.setBorder(BorderFactory.createEmptyBorder(12, 0, 0, 0));
         content.setBackground(MAIN_BG);
         
-        // ---- Description
+        // Description
         content.add(createSectionTitle("Description"));
-        content.add(createSectionText(offer.getDescription()));
+        content.add(createSectionText(job.getDescription()));
         content.add(Box.createVerticalStrut(12));
         
-        // ---- Skills
-        content.add(createSectionTitle("Required Skills"));
-        JPanel chips = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 6));
-        chips.setAlignmentX(LEFT_ALIGNMENT);
-        chips.setBackground(MAIN_BG);
-        
-        String[] skills = offer.getSkills();
-        for (String skill : skills) {
-            if (skill != null && !skill.trim().isEmpty()) {
-                chips.add(createSkillChip(skill.trim()));
-            }
-        }
-        content.add(chips);
-        content.add(Box.createVerticalStrut(12));
-        
-        // ---- Qualifications
-        content.add(createSectionTitle("Qualifications"));
-        content.add(createSectionText(offer.getQualifications()));
-        content.add(Box.createVerticalStrut(12));
-        
-        // ---- Applicants table
+        // Applicants table
         content.add(createSectionTitle("Applicants"));
         
-        String[] cols = {"Student", "Year", "University", "Applied", "Status", "Actions"};
-        Object[][] rows = {
-            {"Amahle Zungu", "Year 3", "University of Pretoria", "25 Jan 2026", "Pending", "Actions"},
-            {"Lerato Phiri", "Year 2", "University of Pretoria", "28 Jan 2026", "Pending", "Actions"},
-            {"James Mokoena", "Year 3", "University of Pretoria", "05 Feb 2026", "Accepted", "Actions"}
+        String[] cols = {"Student Name", "Course", "CGPA", "Applied Date", "Status", "Actions"};
+        DefaultTableModel model = new DefaultTableModel(cols, 0) {
+            @Override
+            public boolean isCellEditable(int r, int c) { return false; }
         };
         
-        DefaultTableModel model = new DefaultTableModel(rows, cols) {
-            @Override public boolean isCellEditable(int r, int c) { return false; }
-        };
+        // Load actual applicants from database
+        ApplicationDAO appDAO = ApplicationDAO.getInstance();
+        StudentDAO studentDAO = StudentDAO.getInstance();
+        List<Application> applications = appDAO.getApplicationsByJob(job.getJobId());
+        
+        DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("dd MMM yyyy");
+        
+        for (Application app : applications) {
+            Student student = studentDAO.getStudent(app.getStudentId());
+            String studentName = student != null ? student.getFullName() : "Unknown";
+            String course = student != null ? student.getCourse() : "N/A";
+            double cgpa = student != null ? student.getCgpa() : 0;
+            String appliedDate = app.getApplicationDate().format(dateFormatter);
+            
+            model.addRow(new Object[]{
+                studentName,
+                course,
+                cgpa,
+                appliedDate,
+                app.getStatus(),
+                "Actions"
+            });
+        }
         
         JTable table = new JTable(model);
         styleTable(table);
@@ -344,22 +421,29 @@ public class CompanyOffersPanel extends JPanel {
         menu.add(miReject);
         
         int[] currentRow = {-1};
+        int[] currentAppId = {-1};
         
         miShortlist.addActionListener(ev -> {
-            if (currentRow[0] >= 0) {
+            if (currentRow[0] >= 0 && currentAppId[0] >= 0) {
+                appDAO.updateApplicationStatus(currentAppId[0], "Shortlisted");
                 model.setValueAt("Shortlisted", currentRow[0], 4);
+                JOptionPane.showMessageDialog(dialog, "Applicant shortlisted successfully!", "Success", JOptionPane.INFORMATION_MESSAGE);
             }
         });
         
         miAccept.addActionListener(ev -> {
-            if (currentRow[0] >= 0) {
+            if (currentRow[0] >= 0 && currentAppId[0] >= 0) {
+                appDAO.updateApplicationStatus(currentAppId[0], "Accepted");
                 model.setValueAt("Accepted", currentRow[0], 4);
+                JOptionPane.showMessageDialog(dialog, "Applicant accepted successfully!", "Success", JOptionPane.INFORMATION_MESSAGE);
             }
         });
         
         miReject.addActionListener(ev -> {
-            if (currentRow[0] >= 0) {
+            if (currentRow[0] >= 0 && currentAppId[0] >= 0) {
+                appDAO.updateApplicationStatus(currentAppId[0], "Rejected");
                 model.setValueAt("Rejected", currentRow[0], 4);
+                JOptionPane.showMessageDialog(dialog, "Applicant rejected.", "Success", JOptionPane.INFORMATION_MESSAGE);
             }
         });
         
@@ -375,13 +459,17 @@ public class CompanyOffersPanel extends JPanel {
                 if (col == actionsCol) {
                     table.setRowSelectionInterval(row, row);
                     currentRow[0] = row;
+                    // Store application ID
+                    if (row < applications.size()) {
+                        currentAppId[0] = applications.get(row).getApplicationId();
+                    }
                     menu.show(table, e.getX(), e.getY());
                 }
             }
         });
         
         JScrollPane sp = new JScrollPane(table);
-        sp.setPreferredSize(new Dimension(820, 150));
+        sp.setPreferredSize(new Dimension(850, 200));
         sp.setBorder(BorderFactory.createLineBorder(Color.LIGHT_GRAY));
         content.add(sp);
         
@@ -395,10 +483,22 @@ public class CompanyOffersPanel extends JPanel {
         dialog.setVisible(true);
     }
     
-    private JLabel createInfoLabel(String text) {
-        JLabel label = new JLabel(text == null || text.isEmpty() ? "-" : text);
-        label.setFont(new Font("SansSerif", Font.PLAIN, 13));
-        return label;
+    private JPanel createInfoPair(String label, String value) {
+        JPanel pair = new JPanel(new FlowLayout(FlowLayout.LEFT, 5, 0));
+        pair.setBackground(Color.WHITE);
+        
+        JLabel labelField = new JLabel(label);
+        labelField.setFont(new Font("SansSerif", Font.BOLD, 12));
+        labelField.setForeground(new Color(70, 70, 70));
+        
+        JLabel valueField = new JLabel(value);
+        valueField.setFont(new Font("SansSerif", Font.PLAIN, 12));
+        valueField.setForeground(Color.BLACK);
+        
+        pair.add(labelField);
+        pair.add(valueField);
+        
+        return pair;
     }
     
     private JLabel createSectionTitle(String text) {
@@ -418,12 +518,16 @@ public class CompanyOffersPanel extends JPanel {
         return l;
     }
     
-    private JLabel createSkillChip(String text) {
-        JLabel c = new JLabel(text);
-        c.setOpaque(true);
-        c.setBackground(new Color(230, 235, 245));
-        c.setBorder(BorderFactory.createEmptyBorder(5, 12, 5, 12));
-        return c;
+    private void stylePrimary(JButton b) {
+        b.setFocusPainted(false);
+        b.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        // border same as fill colour for solid look
+        b.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(ACCENT),
+                BorderFactory.createEmptyBorder(9, 16, 9, 16)
+        ));
+        b.setBackground(ACCENT);
+        b.setForeground(Color.WHITE);
     }
     
     private void styleButton(JButton b) {
@@ -441,7 +545,7 @@ public class CompanyOffersPanel extends JPanel {
     }
     
     private void styleTable(JTable table) {
-        table.setRowHeight(24);
+        table.setRowHeight(28);
         table.setFont(new Font("SansSerif", Font.PLAIN, 12));
         table.getTableHeader().setFont(new Font("SansSerif", Font.BOLD, 12));
         table.getTableHeader().setBackground(ACCENT_DARK);
@@ -451,12 +555,12 @@ public class CompanyOffersPanel extends JPanel {
         table.setSelectionBackground(new Color(230, 240, 255));
         
         // Set column widths
-        table.getColumnModel().getColumn(0).setPreferredWidth(140); // Student
-        table.getColumnModel().getColumn(1).setPreferredWidth(60);  // Year
-        table.getColumnModel().getColumn(2).setPreferredWidth(180); // University
-        table.getColumnModel().getColumn(3).setPreferredWidth(90);  // Applied
-        table.getColumnModel().getColumn(4).setPreferredWidth(80);  // Status
-        table.getColumnModel().getColumn(5).setPreferredWidth(90);  // Actions
+        table.getColumnModel().getColumn(0).setPreferredWidth(150); // Student Name
+        table.getColumnModel().getColumn(1).setPreferredWidth(120); // Course
+        table.getColumnModel().getColumn(2).setPreferredWidth(60);  // CGPA
+        table.getColumnModel().getColumn(3).setPreferredWidth(100); // Applied Date
+        table.getColumnModel().getColumn(4).setPreferredWidth(90);  // Status
+        table.getColumnModel().getColumn(5).setPreferredWidth(80);  // Actions
     }
     
     private String escapeHtml(String s) {
@@ -464,84 +568,5 @@ public class CompanyOffersPanel extends JPanel {
                 .replace("<", "&lt;")
                 .replace(">", "&gt;")
                 .replace("\"", "&quot;");
-    }
-    
-    // ==================== DATA STORE (Placeholder - replace with your actual data layer) ====================
-    public static class CompanyDataStore {
-        private static CompanyDataStore instance;
-        private List<JobOffer> offers = new ArrayList<>();
-        
-        private CompanyDataStore() {
-            // Add some sample data
-            offers.add(new JobOffer(
-                "Software Engineer", "Engineering", "Ebène", "Full-time",
-                "Rs 55,000/month", 2, "31/12/2024","3.0",
-                "Develop and maintain software applications...",
-                "Bachelor's in Computer Science or related field",
-                new String[]{"Java", "Spring", "SQL", "Git"}, 3
-            ));
-        }
-        
-        public static CompanyDataStore getInstance() {
-            if (instance == null) {
-                instance = new CompanyDataStore();
-            }
-            return instance;
-        }
-        
-        public List<JobOffer> getOffers() {
-            return offers;
-        }
-        
-        public void addOffer(JobOffer offer) {
-            offers.add(offer);
-        }
-    }
-    
-    // ==================== JOB OFFER MODEL ====================
-    public static class JobOffer {
-        private String title;
-        private String department;
-        private String location;
-        private String type;
-        private String salary;
-        private int positions;
-        private String deadline;
-        private String cgpa;
-        private String description;
-        private String qualifications;
-        private String[] skills;
-        private int applicants;
-        
-        public JobOffer(String title, String department, String location, String type,
-                String salary, int positions, String deadline, String cgpa,
-                String description, String qualifications, String[] skills, int applicants) {
-            this.title = title;
-            this.department = department;
-            this.location = location;
-            this.type = type;
-            this.salary = salary;
-            this.positions = positions;
-            this.deadline = deadline;
-            this.cgpa = cgpa;
-            this.description = description;
-            this.qualifications = qualifications;
-            this.skills = skills;
-            this.applicants = applicants;
-        }
-        
-        // Getters
-        public String getTitle() { return title; }
-        public String getDepartment() { return department; }
-        public String getLocation() { return location; }
-        public String getType() { return type; }
-        public String getSalary() { return salary; }
-        public int getPositions() { return positions; }
-        public String getDeadline() { return deadline; }
-        public String getCgpa() { return cgpa; }
-        public String getDescription() { return description; }
-        public String getQualifications() { return qualifications; }
-        public String[] getSkills() { return skills; }
-        public int getApplicants() { return applicants; }
     }
 }

@@ -5,11 +5,21 @@ import javax.swing.*;
 import javax.swing.border.*;
 import java.awt.*;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+
+import com.placement.system.models.Student;
+import com.placement.system.models.User;
+import com.placement.system.models.Application;
+import com.placement.system.models.Offer;
+import com.placement.system.utils.SessionManager;
+import com.placement.system.dao.StudentDAO;
+import com.placement.system.dao.ApplicationDAO;
+import com.placement.system.dao.OfferDAO;
 
 public class StudentDashboard extends BaseDashboard {
     
-    // Add team's color scheme constants (matching CompanyDashboard)
+    // Color scheme constants
     protected static final Color MAIN_BG = new Color(0xCF, 0xCF, 0xCF);      // #CFCFCF
     protected static final Color ACCENT = new Color(0x54, 0x54, 0x54);        // #545454
     protected static final Color BTN_BG = new Color(0x7D, 0x7D, 0x7D);        // #7D7D7D
@@ -19,26 +29,42 @@ public class StudentDashboard extends BaseDashboard {
     
     private Map<String, JButton> menuButtons = new HashMap<>();
     private String currentActiveMenu = "Dashboard";
+    private Student student; // Store the actual student object
     
     public StudentDashboard() {
         super("Student Dashboard");
-        // Menu setup moved to addNotify()
+        // Student initialization moved to initializeComponents()
+    }
+    
+    @Override
+    protected void initializeComponents() {
+        // Initialize student FIRST, before any GUI creation
+        User currentUser = SessionManager.getInstance().getCurrentUser();
+        System.out.println("Initializing StudentDashboard for user: " + currentUser);
+        
+        if (currentUser instanceof Student) {
+            this.student = (Student) currentUser;
+            System.out.println("Student cast successful: " + student.getFullName());
+        } else {
+            // Fallback - load from database using DAO
+            System.out.println("User is not Student instance, loading from DAO with ID: " + currentUser.getId());
+            this.student = StudentDAO.getInstance().getStudent(currentUser.getId());
+        }
+        
+        // Call parent initialization
+        super.initializeComponents();
     }
     
     @Override
     public void addNotify() {
         super.addNotify();
-        // This is called after the component hierarchy is fully created
-        // Now it's safe to setup menu buttons
         setupMenuButtons();
-        // Set initial active button
         setActiveButton("Dashboard");
-        setStatusMessage("Logged in as: " + currentUser.getFullName());
+        setStatusMessage("Logged in as: " + student.getFullName());
     }
     
     private void setupMenuButtons() {
-        // Add buttons to the horizontal menu
-        String[] menuItems = {"Dashboard", "Profile", "Browse Offers", "My Applications", "My Offers",  "Policy"};
+    	String[] menuItems = {"Dashboard", "Profile", "Browse Offers", "My Applications", "My Offers",  "Policy"};
         
         for (String item : menuItems) {
             JButton btn = createMenuButton(item, item.equals("Dashboard"));
@@ -51,16 +77,12 @@ public class StudentDashboard extends BaseDashboard {
         }
     }
     
-    /**
-     * Creates a menu button with appropriate styling based on active state
-     */
     private JButton createMenuButton(String text, boolean isActive) {
         JButton button = new JButton(text);
         button.setFont(new Font("SansSerif", Font.PLAIN, 12));
         button.setFocusPainted(false);
         button.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         
-        // Style based on active state
         if (isActive) {
             button.setBackground(BTN_ACTIVE_BG);
             button.setForeground(Color.WHITE);
@@ -80,19 +102,14 @@ public class StudentDashboard extends BaseDashboard {
         return button;
     }
     
-    /**
-     * Sets the active button and updates all button styles
-     */
     private void setActiveButton(String activeMenuItem) {
         currentActiveMenu = activeMenuItem;
         
-        // Update all buttons
         for (Map.Entry<String, JButton> entry : menuButtons.entrySet()) {
             String menuItem = entry.getKey();
             JButton btn = entry.getValue();
             
             if (menuItem.equals(activeMenuItem)) {
-                // Active button style
                 btn.setBackground(BTN_ACTIVE_BG);
                 btn.setForeground(Color.WHITE);
                 btn.setBorder(BorderFactory.createCompoundBorder(
@@ -100,7 +117,6 @@ public class StudentDashboard extends BaseDashboard {
                     BorderFactory.createEmptyBorder(8, 15, 8, 15)
                 ));
             } else {
-                // Inactive button style
                 btn.setBackground(MAIN_BG);
                 btn.setForeground(Color.BLACK);
                 btn.setBorder(BorderFactory.createCompoundBorder(
@@ -114,20 +130,38 @@ public class StudentDashboard extends BaseDashboard {
     
     @Override
     protected void createContentArea() {
+        // Safety check - student should not be null here
+        if (student == null) {
+            System.err.println("ERROR: student is null in createContentArea!");
+            // Try one more time to load from session
+            User currentUser = SessionManager.getInstance().getCurrentUser();
+            if (currentUser instanceof Student) {
+                this.student = (Student) currentUser;
+            } else if (currentUser != null) {
+                this.student = StudentDAO.getInstance().getStudent(currentUser.getId());
+            }
+            
+            if (student == null) {
+                JOptionPane.showMessageDialog(this,
+                    "Failed to load student data. Please log in again.",
+                    "Error",
+                    JOptionPane.ERROR_MESSAGE);
+                return;
+            }
+        }
+        
         contentLayout = new CardLayout();
         contentPanel = new JPanel(contentLayout);
         contentPanel.setBackground(MAIN_BG);
         
+        // Create panels with real data
         MyApplicationsPanel applicationsPanel = new MyApplicationsPanel();
-        MyOffersPanel offersPanel = new MyOffersPanel();
-        // Load applications for the current student
-        String studentId = currentUser.getId() + "";
-        applicationsPanel.loadApplicationsForStudent(studentId);
+        applicationsPanel.loadApplicationsForStudent(String.valueOf(student.getId()));
         
-        // Load offers for the current student
+        MyOffersPanel offersPanel = new MyOffersPanel();
         offersPanel.loadOffersForStudent(currentUser.getId());
         
-        // Add your panels here
+        // Add panels
         contentPanel.add(new DashboardHomePanel(), "Dashboard");
         contentPanel.add(new StudentProfilePanel(), "Profile");
         contentPanel.add(new JobBrowserPanel(), "Browse Offers");
@@ -141,7 +175,11 @@ public class StudentDashboard extends BaseDashboard {
         setStatusMessage("Viewing: " + menuItem);
     }
     
-    // Inner class for dashboard home
+    // ==================== INNER PANEL CLASSES ====================
+    
+    /**
+     * Dashboard Home Panel with REAL data from database
+     */
     class DashboardHomePanel extends JPanel {
         public DashboardHomePanel() {
             setBackground(MAIN_BG);
@@ -164,9 +202,15 @@ public class StudentDashboard extends BaseDashboard {
             headerLabel.setFont(new Font("SansSerif", Font.BOLD, 14));
             accentHeaderPanel.add(headerLabel, BorderLayout.WEST);
             
-            // Status indicator on the right
-            JLabel statusIndicator = new JLabel("● Online");
-            statusIndicator.setForeground(new Color(144, 238, 144));
+            // Status indicator based on placement status
+            JLabel statusIndicator = new JLabel("● " + student.getPlacementStatus());
+            if ("Placed".equals(student.getPlacementStatus())) {
+                statusIndicator.setForeground(new Color(46, 204, 113)); // Green
+            } else if ("Offered".equals(student.getPlacementStatus())) {
+                statusIndicator.setForeground(new Color(241, 176, 59)); // Orange
+            } else {
+                statusIndicator.setForeground(new Color(52, 152, 219)); // Blue
+            }
             statusIndicator.setFont(new Font("SansSerif", Font.PLAIN, 11));
             accentHeaderPanel.add(statusIndicator, BorderLayout.EAST);
             
@@ -175,7 +219,7 @@ public class StudentDashboard extends BaseDashboard {
             contentContainer.setBackground(MAIN_BG);
             contentContainer.setBorder(BorderFactory.createEmptyBorder(15, 15, 15, 15));
             
-            // Welcome message inside content container
+            // Welcome message
             JPanel welcomeSubPanel = new JPanel(new BorderLayout());
             welcomeSubPanel.setBackground(CARD_BG);
             welcomeSubPanel.setBorder(BorderFactory.createCompoundBorder(
@@ -183,10 +227,30 @@ public class StudentDashboard extends BaseDashboard {
                 BorderFactory.createEmptyBorder(15, 15, 15, 15)
             ));
             
-            JLabel welcomeLabel = new JLabel("Welcome to the Student Placement System, " + currentUser.getFullName() + "!");
+            JLabel welcomeLabel = new JLabel("Welcome back, " + student.getFullName() + "!");
             welcomeLabel.setFont(new Font("SansSerif", Font.BOLD, 14));
             welcomeLabel.setHorizontalAlignment(SwingConstants.CENTER);
             welcomeSubPanel.add(welcomeLabel, BorderLayout.CENTER);
+            
+            // ===== FETCH REAL DATA FROM DATABASE =====
+            ApplicationDAO appDAO = ApplicationDAO.getInstance();
+            OfferDAO offerDAO = OfferDAO.getInstance();
+            
+            List<Application> applications = appDAO.getApplicationsByStudent(student.getId());
+            List<Offer> offers = offerDAO.getOffersByStudent(student.getId());
+            
+            // Calculate statistics
+            int totalApplications = applications.size();
+            int pendingOffers = 0;
+            int acceptedOffers = 0;
+            
+            for (Offer offer : offers) {
+                if ("Pending".equals(offer.getStatus())) {
+                    pendingOffers++;
+                } else if ("Accepted".equals(offer.getStatus())) {
+                    acceptedOffers++;
+                }
+            }
             
             // Quick Stats section
             JPanel statsSection = new JPanel(new BorderLayout());
@@ -205,10 +269,10 @@ public class StudentDashboard extends BaseDashboard {
             statsPanel.setBackground(MAIN_BG);
             statsPanel.setBorder(BorderFactory.createEmptyBorder(15, 15, 15, 15));
             
-            // For now using placeholders - you can replace with actual data later
-            statsPanel.add(createStatCard("My Applications", "3"));
-            statsPanel.add(createStatCard("Pending Offers", "4"));
-            statsPanel.add(createStatCard("Placement Status", "Not Placed"));
+            statsPanel.add(createStatCard("My Applications", String.valueOf(totalApplications)));
+            statsPanel.add(createStatCard("Pending Offers", String.valueOf(pendingOffers)));
+            statsPanel.add(createStatCard("Placement Status", student.getPlacementStatus()));
+            statsPanel.add(createStatCard("Accepted Offers", String.valueOf(acceptedOffers)));
             
             statsSection.add(statsPanel, BorderLayout.CENTER);
             
@@ -224,15 +288,31 @@ public class StudentDashboard extends BaseDashboard {
                 Color.BLACK
             ));
             
-            // Create a list for recent activities
-            String[] activities = {
-                "Applied for Software Engineer at Google - 2 days ago",
-                "Application shortlisted for Data Analyst at Microsoft",
-                "New job posting: Frontend Developer at Amazon",
-                "Profile viewed by 3 companies this week"
-            };
+            // Build recent activities from real data
+            DefaultListModel<String> activityModel = new DefaultListModel<>();
             
-            JList<String> activityList = new JList<>(activities);
+            // Add recent applications (last 3)
+            int count = 0;
+            for (Application app : applications) {
+                if (count++ < 3) {
+                    activityModel.addElement("Applied for Job #" + app.getJobId() + 
+                                           " - " + app.getStatus() + 
+                                           " (" + app.getApplicationDate().toLocalDate() + ")");
+                }
+            }
+            
+            // Add recent offers
+            for (Offer offer : offers) {
+                activityModel.addElement("Offer received - " + offer.getStatus() + 
+                                       " (Deadline: " + offer.getAcceptanceDeadline() + ")");
+            }
+            
+            // If no activities, show placeholder
+            if (activityModel.isEmpty()) {
+                activityModel.addElement("No recent activity");
+            }
+            
+            JList<String> activityList = new JList<>(activityModel);
             activityList.setFont(new Font("SansSerif", Font.PLAIN, 12));
             activityList.setBackground(CARD_BG);
             activityList.setBorder(BorderFactory.createLineBorder(BORDER));
@@ -243,7 +323,7 @@ public class StudentDashboard extends BaseDashboard {
             scrollPane.getViewport().setBackground(CARD_BG);
             activityPanel.add(scrollPane, BorderLayout.CENTER);
             
-            // Combine stats and activity in a split view
+            // Combine stats and activity
             JSplitPane splitPane = new JSplitPane(JSplitPane.VERTICAL_SPLIT, statsSection, activityPanel);
             splitPane.setDividerLocation(200);
             splitPane.setBorder(null);
@@ -256,10 +336,9 @@ public class StudentDashboard extends BaseDashboard {
             mainContentPanel.add(accentHeaderPanel, BorderLayout.NORTH);
             mainContentPanel.add(contentContainer, BorderLayout.CENTER);
             
-            // Add the main panel to this DashboardHomePanel
             add(mainContentPanel, BorderLayout.CENTER);
             
-            // Add bottom info panel
+            // Bottom info panel with last login
             JPanel bottomInfoPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
             bottomInfoPanel.setBackground(MAIN_BG);
             bottomInfoPanel.setBorder(BorderFactory.createCompoundBorder(
