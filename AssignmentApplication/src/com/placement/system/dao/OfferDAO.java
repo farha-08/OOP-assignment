@@ -47,9 +47,7 @@ public class OfferDAO {
      */
     public List<Offer> getOffersByStudent(int studentId) {
         List<Offer> offerList = new ArrayList<>();
-        String sql = "SELECT o.*, j.jobTitle, c.companyName FROM offers o " +
-                     "JOIN jobs j ON o.jobId = j.jobId " +
-                     "JOIN companies c ON o.companyId = c.id " +
+        String sql = "SELECT o.* FROM offers o " +
                      "WHERE o.studentId = ? " +
                      "ORDER BY o.offerDate DESC";
         
@@ -60,10 +58,41 @@ public class OfferDAO {
             ResultSet rs = pstmt.executeQuery();
             
             while (rs.next()) {
-                offerList.add(mapResultSetToOfferWithDetails(rs));
+                offerList.add(mapResultSetToOffer(rs));
             }
         } catch (SQLException e) {
             System.err.println("Error getting offers for student: " + studentId);
+            e.printStackTrace();
+        }
+        return offerList;
+    }
+    
+    /**
+     * Get offers for a specific student with job details (for display)
+     */
+    public List<Offer> getOffersByStudentWithDetails(int studentId) {
+        List<Offer> offerList = new ArrayList<>();
+        // Join through applications to get job details
+        String sql = "SELECT o.*, a.jobId, j.jobTitle, j.companyId " +
+                     "FROM offers o " +
+                     "JOIN applications a ON o.applicationId = a.applicationId " +
+                     "JOIN jobs j ON a.jobId = j.jobId " +
+                     "WHERE o.studentId = ? " +
+                     "ORDER BY o.offerDate DESC";
+        
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            
+            pstmt.setInt(1, studentId);
+            ResultSet rs = pstmt.executeQuery();
+            
+            while (rs.next()) {
+                Offer offer = mapResultSetToOffer(rs);
+                // You can store additional job info in a Map or extend Offer model
+                offerList.add(offer);
+            }
+        } catch (SQLException e) {
+            System.err.println("Error getting offers with details for student: " + studentId);
             e.printStackTrace();
         }
         return offerList;
